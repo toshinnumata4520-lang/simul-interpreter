@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>同時通訳 JA⇄EN</title>
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --text:#1b1f24; --muted:#6b7380; --line:#dfe3e8;
+  --accent:#2563eb; --accent-text:#fff; --rec:#dc2626; --pending:#9aa3ae; --src:#4b5563;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0f1115; --panel:#181b21; --text:#eef1f5; --muted:#8b93a1; --line:#2a2f38;
+    --accent:#3b82f6; --rec:#ef4444; --pending:#5f6875; --src:#a3acb9; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Hiragino Sans","Segoe UI","Yu Gothic UI","Meiryo",sans-serif;
+  display:flex;flex-direction:column;height:100vh;height:100dvh;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+h1{font-size:16px;margin:0 12px 0 0;font-weight:600}
+h1 small{color:var(--muted);font-weight:400}
+button,select,input,textarea{font:inherit;color:inherit}
+button{touch-action:manipulation;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 14px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-text);border-color:var(--accent);font-weight:600;min-width:110px}
+button.primary.on{background:var(--rec);border-color:var(--rec)}
+#dirBtn{font-weight:600;min-width:170px}
+.spacer{flex:1}
+#settings{padding:12px 16px;border-bottom:1px solid var(--line);background:var(--panel);display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px 20px}
+#settings{max-height:55vh;max-height:55dvh;overflow-y:auto}
+#settings[hidden]{display:none}
+#settings label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+#settings label.row{flex-direction:row;align-items:center;gap:8px}
+#settings input[type=text],#settings input[type=password],#settings select,#settings textarea{
+  background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;color:var(--text)}
+#settings textarea{min-height:64px;resize:vertical}
+main{flex:1;overflow-y:auto;padding:16px}
+.para{margin:0 auto 18px;max-width:1100px}
+.para .src{color:var(--src);font-size:calc(var(--fs) * .55);line-height:1.5;margin-bottom:2px}
+.para .tgt{font-size:var(--fs);line-height:1.45;font-weight:500}
+.tgt span.pending::after{content:"▍";color:var(--pending);animation:blink 1s steps(1) infinite}
+.tgt span.err{color:var(--rec)}
+@keyframes blink{50%{opacity:0}}
+#live{min-height:2.2em;padding:8px 16px;border-top:1px solid var(--line);background:var(--panel);color:var(--pending);
+  font-size:calc(var(--fs) * .55)}
+#live .committed{color:var(--src)}
+footer{display:flex;gap:16px;flex-wrap:wrap;padding:6px 16px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);background:var(--panel)}
+#empty{overflow-wrap:anywhere;color:var(--muted);text-align:center;margin-top:12vh;line-height:1.9}
+@media (max-width:600px){ h1{flex-basis:100%} #dirBtn{min-width:0;flex:1 1 100%} #startBtn{flex:1} .spacer{display:none} .kbd-hint{display:none} }
+kbd{border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:.9em}
+</style>
+</head>
+<body style="--fs:30px">
+<header>
+  <h1>同時通訳 <small>JA ⇄ EN</small></h1>
+  <button id="dirBtn" title="D キー">日本語 → English</button>
+  <button id="startBtn" class="primary" title="スペースキー">● 開始</button>
+  <div class="spacer"></div>
+  <button id="clearBtn">クリア</button>
+  <button id="settingsBtn">⚙ 設定</button>
+</header>
+
+<section id="settings" hidden>
+  <label>Anthropic APIキー（この端末のブラウザ内にのみ保存）
+    <input id="apiKey" type="password" placeholder="sk-ant-..." autocomplete="off"></label>
+  <label>翻訳モデル
+    <select id="model">
+      <option value="haiku">Haiku 5.5（最速・推奨）</option>
+      <option value="sonnet">Sonnet 5.5（高品質・やや遅い）</option>
+      <option value="opus">Opus 5.5（最高品質・遅い）</option>
+    </select></label>
+  <label>区切り方（速さ ⇄ 正確さ）
+    <select id="speed">
+      <option value="fastest">最速（細かく区切る・言い直し多め）</option>
+      <option value="fast">標準（プロ通訳相当）</option>
+      <option value="accurate">正確（文の切れ目まで待つ）</option>
+    </select></label>
+  <label>文字サイズ
+    <input id="fontSize" type="range" min="18" max="64" step="2"></label>
+  <label class="row"><input id="tts" type="checkbox"> 訳文を読み上げる（ヘッドホン推奨）</label>
+  <label>読み上げ速度
+    <input id="ttsRate" type="range" min="0.8" max="2" step="0.1"></label>
+  <label style="grid-column:1/-1">用語集（1行に1つ「原語 = 訳語」。固有名詞・専門用語の誤訳を防ぎます）
+    <textarea id="glossary" placeholder="東進 = Toshin&#10;中学NET = Chugaku NET&#10;共通テスト = Common Test"></textarea></label>
+</section>
+
+<main id="feed">
+  <div id="empty">
+    ⚙ 設定 で APIキーを入力 → <b>● 開始</b>（<kbd>Space</kbd>）でマイク入力を開始<br>
+    <span class="kbd-hint"><kbd>D</kbd> で通訳方向を切り替え（日本語→英語 / 英語→日本語）</span>
+  </div>
+</main>
+<div id="live"></div>
+<footer>
+  <span id="status">停止中</span>
+  <span id="latency"></span>
+</footer>
+
+<script type="module">
+import Anthropic from "https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.128.0/+esm";
+
+// ---------- 設定 ----------
+const DEFAULTS = { apiKey:"", model:"haiku", speed:"fast", fontSize:30, tts:false, ttsRate:1.2, glossary:"", dir:"ja-en" };
+const S = { ...DEFAULTS };
+try { Object.assign(S, JSON.parse(localStorage.getItem("simul-settings") || "{}")); } catch {}
+try { if (!localStorage.getItem("simul-settings") && innerWidth < 600) S.fontSize = 22; } catch {}
+const save = () => { try { localStorage.setItem("simul-settings", JSON.stringify(S)); } catch {} };
+
+// 翻訳の待ち時間を最小にするため、思考を切るか最小にする
+const MODELS = {
+  haiku:  { model:"claude-haiku-5-5",  thinking:{ type:"disabled" },      output_config:{ effort:"low" } },
+  sonnet: { model:"claude-sonnet-5-5", thinking:{ type:"between_tools" }, output_config:{ effort:"low" } },
+  opus:   { model:"claude-opus-5-5",                                       output_config:{ effort:"low" } },
+};
+
+// maxLen: 文の途中でも翻訳に回す長さ（日本語=文字数 / 英語=単語数）、pause: 無音とみなす間(ms)
+const SPEEDS = {
+  fastest:  { ja:8,  en:4, pause:280 },
+  fast:     { ja:14, en:7, pause:420 },
+  accurate: { ja:0,  en:0, pause:800 },
+};
+
+const $ = id => document.getElementById(id);
+const ui = { apiKey:$("apiKey"), model:$("model"), speed:$("speed"), fontSize:$("fontSize"),
+  tts:$("tts"), ttsRate:$("ttsRate"), glossary:$("glossary") };
+for (const [k, el] of Object.entries(ui)) {
+  if (el.type === "checkbox") el.checked = S[k]; else el.value = S[k];
+  el.addEventListener("input", () => {
+    S[k] = el.type === "checkbox" ? el.checked : el.type === "range" ? Number(el.value) : el.value;
+    save(); applyUi();
+  });
+}
+function applyUi() {
+  document.body.style.setProperty("--fs", S.fontSize + "px");
+  $("dirBtn").textContent = S.dir === "ja-en" ? "日本語 → English" : "English → 日本語";
+}
+applyUi();
+if (!S.apiKey) $("settings").hidden = false;
+
+// ---------- 翻訳 ----------
+let client = null;
+function getClient() {
+  if (!client || client.apiKey !== S.apiKey)
+    client = new Anthropic({ apiKey: S.apiKey, dangerouslyAllowBrowser: true, maxRetries: 1 });
+  return client;
+}
+
+function systemPrompt() {
+  const [src, tgt] = S.dir === "ja-en" ? ["Japanese", "English"] : ["English", "Japanese"];
+  const gloss = S.glossary.trim() ? `\n\nGlossary (always use these renderings):\n${S.glossary.trim()}` : "";
+  return `You are a professional booth simultaneous interpreter working from ${src} into ${tgt}.
+Speech-recognition text arrives in short fragments while the speaker is still talking. Each request gives you the recent fragments with your earlier output, then one NEW fragment.
+
+Translate ONLY the new fragment so that it continues naturally from your earlier output, the way a simultaneous interpreter speaks:
+- Output the ${tgt} rendering only. No quotes, notes, labels, or explanations.
+- The fragment may stop mid-sentence. Render what can be said now ("salami technique"); do not invent the rest and do not repeat what was already rendered.
+- Keep it concise and spoken. Drop fillers and hesitations (えー, あの, um, you know). If the fragment is only filler, output nothing.
+- Silently fix obvious speech-recognition errors using context.
+- ${tgt === "Japanese" ? "Use natural polite spoken Japanese (です・ます)." : "Use natural spoken English."}${gloss}`;
+}
+
+const chunks = [];   // {src, tgt, done, span}
+const latencies = [];
+
+function buildPrompt(idx) {
+  const ctx = chunks.slice(Math.max(0, idx - 8), idx).map(c =>
+    `SRC: ${c.src}\nOUT: ${c.done ? (c.tgt.trim() || "(nothing)") : "(being translated in parallel)"}`).join("\n");
+  return (ctx ? `<recent>\n${ctx}\n</recent>\n\n` : "") + `<new_fragment>${chunks[idx].src}</new_fragment>`;
+}
+
+async function translate(idx) {
+  const c = chunks[idx];
+  if (!S.apiKey) { c.span.textContent = "（APIキー未設定）"; c.span.className = "err"; c.done = true; return; }
+  const t0 = performance.now();
+  let first = true;
+  const sep = S.dir === "ja-en" ? " " : "";
+  try {
+    const stream = getClient().messages.stream({
+      ...MODELS[S.model],
+      max_tokens: 400,
+      system: systemPrompt(),
+      messages: [{ role: "user", content: buildPrompt(idx) }],
+    });
+    for await (const ev of stream) {
+      if (ev.type === "content_block_delta" && ev.delta.type === "text_delta") {
+        if (first) { first = false; recordLatency(performance.now() - t0); }
+        c.tgt += ev.delta.text;
+        c.span.textContent = c.tgt.trim() + sep;
+      }
+    }
+    const msg = await stream.finalMessage();
+    if (msg.stop_reason === "refusal") { c.tgt = ""; c.span.textContent = ""; }
+  } catch (e) {
+    c.span.textContent = "⚠ ";
+    c.span.className = "err";
+    setStatus("翻訳エラー: " + (e?.message || e));
+  }
+  c.done = true;
+  c.span.classList.remove("pending");
+  flushSpeech();
+}
+
+function recordLatency(ms) {
+  latencies.push(ms);
+  if (latencies.length > 30) latencies.shift();
+  const avg = latencies.reduce((a, b) => a + b, 0) / latencies.length;
+  $("latency").textContent = `翻訳の初動: 直近 ${Math.round(ms)}ms / 平均 ${Math.round(avg)}ms`;
+}
+
+// ---------- 読み上げ（順番を守る） ----------
+let speakPtr = 0;
+function flushSpeech() {
+  while (speakPtr < chunks.length && chunks[speakPtr].done) {
+    const c = chunks[speakPtr++];
+    if (!S.tts || !c.tgt.trim() || !("speechSynthesis" in window)) continue;
+    const u = new SpeechSynthesisUtterance(c.tgt.trim());
+    u.lang = S.dir === "ja-en" ? "en-US" : "ja-JP";
+    u.rate = S.ttsRate;
+    speechSynthesis.speak(u);
+  }
+}
+
+// ---------- 表示 ----------
+const feed = $("feed");
+let para = null;
+function newPara() {
+  $("empty")?.remove();
+  const p = document.createElement("div"); p.className = "para";
+  const src = document.createElement("div"); src.className = "src";
+  const tgt = document.createElement("div"); tgt.className = "tgt";
+  p.append(src, tgt); feed.append(p);
+  return { src, tgt };
+}
+function scrollDown() {
+  if (feed.scrollHeight - feed.scrollTop - feed.clientHeight < 400) feed.scrollTop = feed.scrollHeight;
+}
+const hasContent = s => /[\p{L}\p{N}]/u.test(s);
+
+function commit(src) {
+  src = src.trim();
+  if (!hasContent(src)) return;
+  if (!para) para = newPara();
+  const s = document.createElement("span");
+  s.textContent = src + (S.dir === "en-ja" ? " " : "");
+  para.src.append(s);
+  const span = document.createElement("span"); span.className = "pending";
+  para.tgt.append(span);
+  chunks.push({ src, tgt: "", done: false, span });
+  translate(chunks.length - 1);
+  scrollDown();
+}
+const endPara = () => { para = null; };
+
+// ---------- 音声認識と区切り ----------
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, running = false;
+let committed = {}, prevText = {}, pauseTimer = null;
+
+const measure = s => S.dir === "ja-en" ? s.replace(/\s/g, "").length : s.trim().split(/\s+/).filter(Boolean).length;
+
+// 安定している（直前の認識結果と一致する）範囲の中で、区切りの良い位置を探す
+function findCut(t, c, stable) {
+  if (S.dir === "en-ja") {
+    const idx = t.lastIndexOf(" ", stable - 1);   // 最後の単語は伸びる途中かもしれないので除く
+    return idx > c ? idx + 1 : c;
+  }
+  // 日本語は単語の途中で切らないよう形態素の切れ目を使い、助詞・文末の直後を優先する
+  const limit = stable - 1;
+  let best = c, lastWord = c;
+  for (const seg of jaSegmenter.segment(t.slice(0, limit))) {
+    const end = seg.index + seg.segment.length;
+    if (end >= limit || end <= c + 3) continue;   // 最後の語は伸びる途中かもしれないので除く
+    lastWord = end;
+    if (JA_BREAK.test(seg.segment)) best = end;
+  }
+  if (best > c) return best;
+  return measure(t.slice(c, limit)) >= SPEEDS[S.speed].ja * 1.5 ? lastWord : c;
+}
+const jaSegmenter = new Intl.Segmenter("ja", { granularity: "word" });
+const JA_BREAK = /^(?:[、。，,？！?!]|は|が|を|に|で|と|も|へ|や|から|まで|けど|ので|のに|ため|て|について|として|いただき|ながら|ます|です|ました|でした|ません|ください)$/;
+
+function handleInterim(i, t) {
+  if ((committed[i] || 0) > t.length) committed[i] = t.length;
+  const c = committed[i] || 0;
+  const prev = prevText[i] || "";
+  prevText[i] = t;
+  const P = SPEEDS[S.speed], maxLen = S.dir === "ja-en" ? P.ja : P.en;
+  if (maxLen && measure(t.slice(c)) >= maxLen) {
+    let stable = 0;
+    while (stable < prev.length && stable < t.length && prev[stable] === t[stable]) stable++;
+    const cut = findCut(t, c, stable);
+    if (cut > c) { commit(t.slice(c, cut)); committed[i] = cut; }
+  }
+  clearTimeout(pauseTimer);
+  pauseTimer = setTimeout(() => {
+    const txt = prevText[i] || "", cc = committed[i] || 0;
+    if (hasContent(txt.slice(cc))) { commit(txt.slice(cc)); committed[i] = txt.length; }
+  }, P.pause);
+}
+
+function renderLive(e) {
+  const live = $("live"); live.textContent = "";
+  for (let i = e.resultIndex; i < e.results.length; i++) {
+    const r = e.results[i];
+    if (r.isFinal) continue;
+    const t = r[0].transcript, c = Math.min(committed[i] || 0, t.length);
+    const a = document.createElement("span"); a.className = "committed"; a.textContent = t.slice(0, c);
+    const b = document.createElement("span"); b.textContent = t.slice(c);
+    live.append(a, b);
+  }
+}
+
+function startRec() {
+  if (!SR) { setStatus("このブラウザは音声認識に対応していません。Edge または Chrome で開いてください。"); return; }
+  committed = {}; prevText = {};
+  rec = new SR();
+  rec.lang = S.dir === "ja-en" ? "ja-JP" : "en-US";
+  rec.continuous = true;
+  rec.interimResults = true;
+  rec.onstart = () => { committed = {}; prevText = {}; setStatus(`🎙 聞き取り中（${rec.lang}）`); };
+  rec.onresult = e => {
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const r = e.results[i], t = r[0].transcript;
+      if (r.isFinal) {
+        clearTimeout(pauseTimer);
+        const c = Math.min(committed[i] || 0, t.length);
+        commit(t.slice(c));
+        committed[i] = t.length;
+        endPara();
+      } else handleInterim(i, t);
+    }
+    renderLive(e);
+  };
+  rec.onerror = e => {
+    if (e.error === "not-allowed") { setStatus("マイクの使用が許可されていません"); stop(); }
+    else if (e.error !== "no-speech" && e.error !== "aborted") setStatus("音声認識エラー: " + e.error);
+  };
+  // 連続認識はブラウザ側で定期的に切れるので自動で再開する
+  // iPhone は再開を拒むことがあるので、その場合はタップでの再開を促す
+  rec.onend = () => {
+    if (!running || !rec) return;
+    try { rec.start(); } catch { setStatus("聞き取りが止まりました。■ 停止 → ● 開始 で再開してください"); }
+  };
+  rec.start();
+}
+
+function start() {
+  if (!S.apiKey) { $("settings").hidden = false; ui.apiKey.focus(); setStatus("APIキーを入力してください"); return; }
+  running = true;
+  $("startBtn").textContent = "■ 停止"; $("startBtn").classList.add("on");
+  // iPhone は読み上げをタップ操作の中で一度鳴らさないと、以後の読み上げが無音になる
+  if (S.tts && "speechSynthesis" in window) speechSynthesis.speak(new SpeechSynthesisUtterance(""));
+  // 通訳中に画面が消えると聞き取りが止まるので、スリープを防ぐ
+  navigator.wakeLock?.request("screen").then(l => { wakeLock = l; }).catch(() => {});
+  startRec();
+}
+let wakeLock = null;
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && running)
+    navigator.wakeLock?.request("screen").then(l => { wakeLock = l; }).catch(() => {});
+});
+function stop() {
+  running = false;
+  clearTimeout(pauseTimer);
+  const r = rec; rec = null;
+  try { r?.stop(); } catch {}
+  wakeLock?.release().catch(() => {}); wakeLock = null;
+  $("startBtn").textContent = "● 開始"; $("startBtn").classList.remove("on");
+  $("live").textContent = "";
+  endPara();
+  setStatus("停止中");
+}
+function swapDir() {
+  S.dir = S.dir === "ja-en" ? "en-ja" : "ja-en"; save(); applyUi(); endPara();
+  if (running) { const r = rec; rec = null; try { r?.abort(); } catch {} startRec(); }
+}
+function setStatus(s) { $("status").textContent = s; }
+
+$("startBtn").onclick = () => running ? stop() : start();
+$("dirBtn").onclick = swapDir;
+$("settingsBtn").onclick = () => { $("settings").hidden = !$("settings").hidden; };
+$("clearBtn").onclick = () => {
+  feed.textContent = ""; chunks.length = 0; speakPtr = 0; endPara();
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+};
+document.addEventListener("keydown", e => {
+  if (e.target.closest?.("input,textarea,select")) return;
+  if (e.code === "Space") { e.preventDefault(); running ? stop() : start(); }
+  else if (e.key === "d" || e.key === "D") swapDir();
+});
+</script>
+</body>
+</html>
