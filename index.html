@@ -33,6 +33,9 @@ body.nosrc .para .src{display:none}
 .para .tgt{font-size:var(--fs);line-height:1.32;font-weight:600;letter-spacing:-.005em;overflow-wrap:anywhere}
 .tgt span.pending::after{content:"▍";color:var(--pending);animation:blink 1s steps(1) infinite}
 .tgt span.err{color:var(--rec)}
+.tgt.refined{animation:refined .6s ease-out}
+.tgt.refined::after{content:" ✓";font-size:.38em;font-weight:400;color:var(--muted);vertical-align:middle}
+@keyframes refined{from{opacity:.35}}
 @keyframes blink{50%{opacity:0}}
 #empty{color:var(--muted);text-align:center;margin-top:22vh;line-height:2;font-size:17px;overflow-wrap:anywhere}
 
@@ -128,6 +131,7 @@ kbd{border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:.9em}
       </select></label>
     <label>文字サイズ
       <input id="fontSize" type="range" min="18" max="96" step="2"></label>
+    <label class="row"><input id="refine" type="checkbox"> 話の区切りで訳全体を整え直す（推奨・✓が付きます）</label>
     <label class="row"><input id="tts" type="checkbox"> 訳文を読み上げる（ヘッドホン推奨）</label>
     <label>読み上げ速度
       <input id="ttsRate" type="range" min="0.8" max="2" step="0.1"></label>
@@ -141,7 +145,7 @@ kbd{border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:.9em}
 import Anthropic from "https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.128.0/+esm";
 
 // ---------- 設定 ----------
-const DEFAULTS = { provider:"gemini", geminiKey:"", rpm:10, apiKey:"", model:"haiku", speed:"fast", fontSize:44, showSrc:true, tts:false, ttsRate:1.2, glossary:"", dir:"ja-en" };
+const DEFAULTS = { provider:"gemini", geminiKey:"", rpm:10, apiKey:"", model:"haiku", speed:"fast", fontSize:44, showSrc:true, refine:true, tts:false, ttsRate:1.2, glossary:"", dir:"ja-en" };
 const S = { ...DEFAULTS };
 try { Object.assign(S, JSON.parse(localStorage.getItem("simul-settings") || "{}")); } catch {}
 const save = () => { try { localStorage.setItem("simul-settings", JSON.stringify(S)); } catch {} };
@@ -167,7 +171,7 @@ const SPEEDS = {
 
 const $ = id => document.getElementById(id);
 const ui = { provider:$("provider"), geminiKey:$("geminiKey"), rpm:$("rpm"), apiKey:$("apiKey"), model:$("model"), speed:$("speed"), fontSize:$("fontSize"),
-  tts:$("tts"), ttsRate:$("ttsRate"), glossary:$("glossary") };
+  refine:$("refine"), tts:$("tts"), ttsRate:$("ttsRate"), glossary:$("glossary") };
 for (const [k, el] of Object.entries(ui)) {
   if (el.type === "checkbox") el.checked = S[k]; else el.value = S[k];
   el.addEventListener("input", () => {
@@ -369,7 +373,43 @@ function commit(src) {
   dispatch();
   scrollDown();
 }
-const endPara = () => { para = null; };
+const endPara = () => { if (para) refineWhenDone(para, S.dir === "ja-en" ? "ja" : "en"); para = null; };
+
+// ---------- 区切りごとの訳の整え直し ----------
+// 細切れで出した速報の訳を、話の区切りで段落の原文全体からもう一度訳し直して置き換える
+const refined = [];   // 直近の整え直し結果（次の段落の文脈に使う）
+function refineWhenDone(p, srcLang, tries = 0) {
+  const busy = p.tgt.querySelector(".pending") || queue.some(q => q.para === p);
+  if (busy) { if (tries < 40) setTimeout(() => refineWhenDone(p, srcLang, tries + 1), 300); return; }
+  refinePara(p, srcLang);
+}
+async function refinePara(p, srcLang) {
+  const src = p.src.textContent.trim();
+  if (!S.refine || !hasContent(src)) return;
+  const useGemini = S.provider === "gemini" ? !!S.geminiKey : !S.apiKey;
+  if (useGemini && (!S.geminiKey || rateWait() > 0)) return;   // 無料枠の上限に近いときは速報の訳のままにする
+  const tgt = srcLang === "ja" ? "English" : "Japanese";
+  const gloss = S.glossary.trim() ? `\n\nGlossary (always use these renderings):\n${S.glossary.trim()}` : "";
+  const system = `You are a professional interpreter. You receive one passage of live speech as transcribed by speech recognition, possibly from a non-native speaker, so it may contain misrecognized words, missing punctuation, and fillers.
+Translate the whole passage into natural, accurate ${tgt}:
+- Output only the ${tgt} translation. No notes or quotes.
+- Infer the intended words from context and silently fix recognition errors.
+- Drop fillers and false starts; keep every substantive point.
+- ${tgt === "Japanese" ? "Use natural polite spoken Japanese (です・ます)." : "Use natural spoken English."}${gloss}`;
+  const ctx = refined.slice(-3).map(r => `SRC: ${r.src}\nOUT: ${r.tgt}`).join("\n");
+  const prompt = (ctx ? `<previous>\n${ctx}\n</previous>\n\n` : "") + `<passage>${src}</passage>`;
+  try {
+    if (useGemini) sentAt.push(performance.now());
+    let out = "";
+    for await (const t of useGemini ? streamGemini(system, prompt) : streamClaude(system, prompt)) out += t;
+    out = out.trim();
+    if (!out) return;
+    p.tgt.textContent = out;
+    p.tgt.classList.add("refined");
+    refined.push({ src, tgt: out });
+    if (refined.length > 10) refined.shift();
+  } catch {}   // 失敗したら速報の訳をそのまま残す
+}
 
 // ---------- 音声認識と区切り ----------
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -475,7 +515,10 @@ let autoPara = null, autoBuf = "", autoGap = null;
 
 // Live Translate は「発話の終わり」を知らせてこないので、
 // 訳す方向が変わったときと、訳の出力が途切れたときに段落を区切る
-function closeAutoPara() { autoPara?.span.classList.remove("pending"); autoPara = null; }
+function closeAutoPara() {
+  if (autoPara) { autoPara.span.classList.remove("pending"); refinePara(autoPara.p, autoPara.srcLang); }
+  autoPara = null;
+}
 function onLiveText(target, kind, text, langCode) {
   if (kind === "src") {
     const lang = (langCode || "").slice(0, 2);
