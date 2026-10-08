@@ -8,116 +8,145 @@
 <style>
 :root{
   --bg:#f6f7f9; --panel:#ffffff; --text:#1b1f24; --muted:#6b7380; --line:#dfe3e8;
-  --accent:#2563eb; --accent-text:#fff; --rec:#dc2626; --pending:#9aa3ae; --src:#4b5563;
+  --accent:#2563eb; --accent-text:#fff; --rec:#dc2626; --pending:#9aa3ae; --src:#5b6472;
+  --dock:rgba(255,255,255,.82);
 }
 @media (prefers-color-scheme: dark){
-  :root{ --bg:#0f1115; --panel:#181b21; --text:#eef1f5; --muted:#8b93a1; --line:#2a2f38;
-    --accent:#3b82f6; --rec:#ef4444; --pending:#5f6875; --src:#a3acb9; }
+  :root{ --bg:#0b0d10; --panel:#181b21; --text:#f2f4f7; --muted:#8b93a1; --line:#2a2f38;
+    --accent:#3b82f6; --rec:#ef4444; --pending:#5f6875; --src:#98a1ae; --dock:rgba(20,23,28,.82); }
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Hiragino Sans","Segoe UI","Yu Gothic UI","Meiryo",sans-serif;
-  display:flex;flex-direction:column;height:100vh;height:100dvh;
-  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
-h1{font-size:16px;margin:0 12px 0 0;font-weight:600}
-h1 small{color:var(--muted);font-weight:400}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);overflow:hidden;
+  font-family:system-ui,-apple-system,"Hiragino Sans","Segoe UI","Yu Gothic UI","Meiryo",sans-serif}
 button,select,input,textarea{font:inherit;color:inherit}
-button{touch-action:manipulation;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 14px;cursor:pointer}
-button:hover{border-color:var(--accent)}
-button.primary{background:var(--accent);color:var(--accent-text);border-color:var(--accent);font-weight:600;min-width:110px}
-button.primary.on{background:var(--rec);border-color:var(--rec)}
-#dirBtn{font-weight:600;min-width:170px}
-.spacer{flex:1}
-#settings{padding:12px 16px;border-bottom:1px solid var(--line);background:var(--panel);display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px 20px}
-#settings{max-height:55vh;max-height:55dvh;overflow-y:auto}
-#settings[hidden],#settings label[hidden]{display:none}
-#settings label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
-#settings label.row{flex-direction:row;align-items:center;gap:8px}
-#settings input[type=text],#settings input[type=password],#settings select,#settings textarea{
-  background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;color:var(--text)}
-#settings textarea{min-height:64px;resize:vertical}
-main{flex:1;overflow-y:auto;padding:16px}
-.para{margin:0 auto 18px;max-width:1100px}
-.para .src{color:var(--src);font-size:calc(var(--fs) * .55);line-height:1.5;margin-bottom:2px}
-.para .tgt{font-size:var(--fs);line-height:1.45;font-weight:500}
+button{touch-action:manipulation;cursor:pointer;-webkit-tap-highlight-color:transparent}
+
+/* 訳文エリア：画面全体を使う */
+#feed{position:fixed;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:calc(env(safe-area-inset-top) + 14px) calc(env(safe-area-inset-right) + 18px)
+          calc(env(safe-area-inset-bottom) + var(--dock-h, 120px) + 12px) calc(env(safe-area-inset-left) + 18px)}
+.para{margin:0 auto .7em;max-width:1200px;opacity:.38;transition:opacity .3s}
+.para:nth-last-child(-n+2){opacity:1}
+.para .src{color:var(--src);font-size:calc(var(--fs) * .42);line-height:1.45;margin-bottom:.15em}
+body.nosrc .para .src{display:none}
+.para .tgt{font-size:var(--fs);line-height:1.32;font-weight:600;letter-spacing:-.005em;overflow-wrap:anywhere}
 .tgt span.pending::after{content:"▍";color:var(--pending);animation:blink 1s steps(1) infinite}
 .tgt span.err{color:var(--rec)}
 @keyframes blink{50%{opacity:0}}
-#live{min-height:2.2em;padding:8px 16px;border-top:1px solid var(--line);background:var(--panel);color:var(--pending);
-  font-size:calc(var(--fs) * .55)}
+#empty{color:var(--muted);text-align:center;margin-top:22vh;line-height:2;font-size:17px;overflow-wrap:anywhere}
+
+/* 下部の操作バー（半透明） */
+#dock{position:fixed;left:0;right:0;bottom:0;background:var(--dock);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-top:1px solid var(--line);
+  padding:6px calc(env(safe-area-inset-right) + 12px) calc(env(safe-area-inset-bottom) + 8px) calc(env(safe-area-inset-left) + 12px)}
+#live{height:1.5em;font-size:14px;color:var(--pending);white-space:nowrap;overflow:hidden}
 #live .committed{color:var(--src)}
-footer{display:flex;gap:16px;flex-wrap:wrap;padding:6px 16px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);background:var(--panel)}
-#empty{overflow-wrap:anywhere;color:var(--muted);text-align:center;margin-top:12vh;line-height:1.9}
-@media (max-width:600px){ h1{flex-basis:100%} #dirBtn{min-width:0;flex:1 1 100%} #startBtn{flex:1} .spacer{display:none} .kbd-hint{display:none} }
+#bar{display:flex;align-items:center;justify-content:space-between;gap:6px;max-width:560px;margin:2px auto 0}
+.ib{flex:0 1 auto;min-width:44px;height:44px;border-radius:22px;white-space:nowrap;border:1px solid var(--line);background:var(--panel);
+  font-size:15px;font-weight:600;padding:0 10px;color:var(--text)}
+.ib.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+#startBtn{flex:0 0 62px;width:62px;height:62px;border-radius:31px;border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:700;
+  box-shadow:0 2px 10px rgba(0,0,0,.18)}
+#startBtn.on{background:var(--rec);animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 8px rgba(220,38,38,.18)}}
+#statusline{display:flex;justify-content:center;gap:12px;font-size:11px;color:var(--muted);margin-top:4px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#status.err{color:var(--rec);white-space:normal}
+
+/* 設定は全画面のシート */
+#sheet{position:fixed;inset:0;background:var(--bg);overflow-y:auto;z-index:10;
+  padding:calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + 16px) calc(env(safe-area-inset-bottom) + 24px) calc(env(safe-area-inset-left) + 16px)}
+#sheet[hidden]{display:none}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;max-width:640px;margin:0 auto 12px;
+  position:sticky;top:0;background:var(--bg);padding:6px 0;z-index:1}
+.sheet-head h2{font-size:18px;margin:0}
+.sheet-head button,.danger{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:8px 16px;font-weight:600}
+.sheet-head button{background:var(--accent);color:#fff;border-color:var(--accent)}
+#settings{display:grid;gap:14px;max-width:640px;margin:0 auto}
+#settings label[hidden]{display:none}
+#settings label{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--muted)}
+#settings label.row{flex-direction:row;align-items:center;gap:8px;font-size:15px;color:var(--text)}
+#settings input[type=text],#settings input[type=password],#settings input[type=number],#settings select,#settings textarea{
+  background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px;color:var(--text);font-size:16px}
+#settings textarea{min-height:90px;resize:vertical}
+.danger{color:var(--rec);justify-self:start}
 kbd{border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:.9em}
+@media (hover:none){ .kbd-hint{display:none} }
 </style>
 </head>
-<body style="--fs:30px">
-<header>
-  <h1>同時通訳 <small>JA ⇄ EN</small></h1>
-  <button id="dirBtn" title="D キー">日本語 → English</button>
-  <button id="startBtn" class="primary" title="スペースキー">● 開始</button>
-  <div class="spacer"></div>
-  <button id="clearBtn">クリア</button>
-  <button id="settingsBtn">⚙ 設定</button>
-</header>
-
-<section id="settings" hidden>
-  <label>翻訳エンジン
-    <select id="provider">
-      <option value="gemini">Gemini（無料枠・回数制限あり）</option>
-      <option value="claude">Claude（有料・最速）</option>
-    </select></label>
-  <label data-for="gemini">Gemini APIキー（この端末のブラウザ内にのみ保存）
-    <input id="geminiKey" type="password" placeholder="AIza..." autocomplete="off"></label>
-  <label data-for="gemini">1分あたりの最大リクエスト数（無料枠の上限に合わせる）
-    <input id="rpm" type="number" min="2" max="60" step="1"></label>
-  <label data-for="claude">Anthropic APIキー（この端末のブラウザ内にのみ保存）
-    <input id="apiKey" type="password" placeholder="sk-ant-..." autocomplete="off"></label>
-  <label data-for="claude">翻訳モデル
-    <select id="model">
-      <option value="haiku">Haiku 5.5（最速・推奨）</option>
-      <option value="sonnet">Sonnet 5.5（高品質・やや遅い）</option>
-      <option value="opus">Opus 5.5（最高品質・遅い）</option>
-    </select></label>
-  <label>区切り方（速さ ⇄ 正確さ）
-    <select id="speed">
-      <option value="fastest">最速（細かく区切る・言い直し多め）</option>
-      <option value="fast">標準（プロ通訳相当）</option>
-      <option value="accurate">正確（文の切れ目まで待つ）</option>
-    </select></label>
-  <label>文字サイズ
-    <input id="fontSize" type="range" min="18" max="64" step="2"></label>
-  <label class="row"><input id="tts" type="checkbox"> 訳文を読み上げる（ヘッドホン推奨）</label>
-  <label>読み上げ速度
-    <input id="ttsRate" type="range" min="0.8" max="2" step="0.1"></label>
-  <label style="grid-column:1/-1">用語集（1行に1つ「原語 = 訳語」。固有名詞・専門用語の誤訳を防ぎます）
-    <textarea id="glossary" placeholder="東進 = Toshin&#10;中学NET = Chugaku NET&#10;共通テスト = Common Test"></textarea></label>
-</section>
-
+<body style="--fs:36px">
 <main id="feed">
   <div id="empty">
-    ⚙ 設定 で APIキーを入力 → <b>● 開始</b>（<kbd>Space</kbd>）でマイク入力を開始<br>
-    <span class="kbd-hint"><kbd>D</kbd> で通訳方向を切り替え（日本語→英語 / 英語→日本語）</span>
+    下の <b>●</b> を押して話し始めてください<br>
+    <span class="kbd-hint"><kbd>Space</kbd> 開始/停止 ・ <kbd>D</kbd> 方向切替</span>
   </div>
 </main>
-<div id="live"></div>
-<footer>
-  <span id="status">停止中</span>
-  <span id="latency"></span>
-  <span id="queued"></span>
-</footer>
+
+<div id="dock">
+  <div id="live"></div>
+  <div id="bar">
+    <button id="dirBtn" class="ib" title="通訳方向（D キー）">日→英</button>
+    <button id="srcBtn" class="ib" title="原文の表示">原文</button>
+    <button id="smallerBtn" class="ib" title="文字を小さく" aria-label="文字を小さく">A−</button>
+    <button id="startBtn" title="開始/停止（スペースキー）">開始</button>
+    <button id="biggerBtn" class="ib" title="文字を大きく" aria-label="文字を大きく">A＋</button>
+    <button id="settingsBtn" class="ib" title="設定" aria-label="設定">⚙</button>
+  </div>
+  <div id="statusline">
+    <span id="status">停止中</span>
+    <span id="latency"></span>
+    <span id="queued"></span>
+  </div>
+</div>
+
+<div id="sheet" hidden>
+  <div class="sheet-head"><h2>設定</h2><button id="closeSettings">完了</button></div>
+  <section id="settings">
+    <label>翻訳エンジン
+      <select id="provider">
+        <option value="gemini">Gemini（無料枠・回数制限あり）</option>
+        <option value="claude">Claude（有料・最速）</option>
+      </select></label>
+    <label data-for="gemini">Gemini APIキー（この端末のブラウザ内にのみ保存）
+      <input id="geminiKey" type="password" placeholder="AQ... / AIza..." autocomplete="off"></label>
+    <label data-for="gemini">1分あたりの最大リクエスト数（無料枠の上限に合わせる）
+      <input id="rpm" type="number" min="2" max="60" step="1"></label>
+    <label data-for="claude">Anthropic APIキー（この端末のブラウザ内にのみ保存）
+      <input id="apiKey" type="password" placeholder="sk-ant-..." autocomplete="off"></label>
+    <label data-for="claude">翻訳モデル
+      <select id="model">
+        <option value="haiku">Haiku 5.5（最速・推奨）</option>
+        <option value="sonnet">Sonnet 5.5（高品質・やや遅い）</option>
+        <option value="opus">Opus 5.5（最高品質・遅い）</option>
+      </select></label>
+    <label>区切り方（速さ ⇄ 正確さ）
+      <select id="speed">
+        <option value="fastest">最速（細かく区切る・言い直し多め）</option>
+        <option value="fast">標準（プロ通訳相当）</option>
+        <option value="accurate">正確（文の切れ目まで待つ）</option>
+      </select></label>
+    <label>文字サイズ
+      <input id="fontSize" type="range" min="18" max="96" step="2"></label>
+    <label class="row"><input id="tts" type="checkbox"> 訳文を読み上げる（ヘッドホン推奨）</label>
+    <label>読み上げ速度
+      <input id="ttsRate" type="range" min="0.8" max="2" step="0.1"></label>
+    <label>用語集（1行に1つ「原語 = 訳語」。固有名詞・専門用語の誤訳を防ぎます）
+      <textarea id="glossary" placeholder="東進 = Toshin&#10;中学NET = Chugaku NET&#10;共通テスト = Common Test"></textarea></label>
+    <button id="clearBtn" class="danger">表示をすべてクリア</button>
+  </section>
+</div>
 
 <script type="module">
 import Anthropic from "https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.128.0/+esm";
 
 // ---------- 設定 ----------
-const DEFAULTS = { provider:"gemini", geminiKey:"", rpm:10, apiKey:"", model:"haiku", speed:"fast", fontSize:30, tts:false, ttsRate:1.2, glossary:"", dir:"ja-en" };
+const DEFAULTS = { provider:"gemini", geminiKey:"", rpm:10, apiKey:"", model:"haiku", speed:"fast", fontSize:44, showSrc:true, tts:false, ttsRate:1.2, glossary:"", dir:"ja-en" };
 const S = { ...DEFAULTS };
 try { Object.assign(S, JSON.parse(localStorage.getItem("simul-settings") || "{}")); } catch {}
-try { if (!localStorage.getItem("simul-settings") && innerWidth < 600) S.fontSize = 22; } catch {}
 const save = () => { try { localStorage.setItem("simul-settings", JSON.stringify(S)); } catch {} };
+// 全画面レイアウトに合わせ、以前の小さい文字サイズ設定は一度だけ新しい既定値に上げる
+if (S.uiVer !== 2) { S.fontSize = innerWidth < 600 ? 34 : 44; S.uiVer = 2; save(); }
 
 // 翻訳の待ち時間を最小にするため、思考を切るか最小にする
 const MODELS = {
@@ -148,12 +177,18 @@ for (const [k, el] of Object.entries(ui)) {
 }
 function applyUi() {
   document.body.style.setProperty("--fs", S.fontSize + "px");
-  $("dirBtn").textContent = S.dir === "ja-en" ? "日本語 → English" : "English → 日本語";
+  ui.fontSize.value = S.fontSize;
+  $("dirBtn").textContent = S.dir === "ja-en" ? "日→英" : "英→日";
+  document.body.classList.toggle("nosrc", !S.showSrc);
+  $("srcBtn").classList.toggle("on", S.showSrc);
+  document.body.style.setProperty("--dock-h", $("dock").offsetHeight + "px");
   for (const el of document.querySelectorAll("[data-for]")) el.hidden = el.dataset.for !== S.provider;
 }
 applyUi();
 const activeKey = () => S.provider === "gemini" ? S.geminiKey : S.apiKey;
-if (!activeKey()) $("settings").hidden = false;
+const openSheet = (open = true) => { $("sheet").hidden = !open; };
+if (!activeKey()) openSheet();
+addEventListener("resize", applyUi);
 
 // ---------- 翻訳 ----------
 let client = null;
@@ -279,7 +314,7 @@ async function translate(idx) {
       c.span.className = "err";
       setStatus(e instanceof RateLimitError
         ? "Gemini 無料枠の上限に達しました。少し待つか、設定の「1分あたりの最大リクエスト数」を下げてください（1日の上限の場合は日本時間の夕方16〜17時頃に回復）"
-        : "翻訳エラー: " + (e?.message || e));
+        : "翻訳エラー: " + (e?.message || e), true);
     }
   }
   c.done = true;
@@ -393,10 +428,11 @@ function renderLive(e) {
     const b = document.createElement("span"); b.textContent = t.slice(c);
     live.append(a, b);
   }
+  live.scrollLeft = live.scrollWidth;   // 一行に収まらないときは最新の部分を見せる
 }
 
 function startRec() {
-  if (!SR) { setStatus("このブラウザは音声認識に対応していません。Edge または Chrome で開いてください。"); return; }
+  if (!SR) { setStatus("このブラウザは音声認識に対応していません。Safari / Edge / Chrome で開いてください。", true); return; }
   committed = {}; prevText = {};
   rec = new SR();
   rec.lang = S.dir === "ja-en" ? "ja-JP" : "en-US";
@@ -417,22 +453,22 @@ function startRec() {
     renderLive(e);
   };
   rec.onerror = e => {
-    if (e.error === "not-allowed") { setStatus("マイクの使用が許可されていません"); stop(); }
-    else if (e.error !== "no-speech" && e.error !== "aborted") setStatus("音声認識エラー: " + e.error);
+    if (e.error === "not-allowed") { setStatus("マイクの使用が許可されていません", true); stop(); }
+    else if (e.error !== "no-speech" && e.error !== "aborted") setStatus("音声認識エラー: " + e.error, true);
   };
   // 連続認識はブラウザ側で定期的に切れるので自動で再開する
   // iPhone は再開を拒むことがあるので、その場合はタップでの再開を促す
   rec.onend = () => {
     if (!running || !rec) return;
-    try { rec.start(); } catch { setStatus("聞き取りが止まりました。■ 停止 → ● 開始 で再開してください"); }
+    try { rec.start(); } catch { setStatus("聞き取りが止まりました。停止 → 開始 で再開してください", true); }
   };
   rec.start();
 }
 
 function start() {
-  if (!activeKey()) { $("settings").hidden = false; (S.provider === "gemini" ? ui.geminiKey : ui.apiKey).focus(); setStatus("APIキーを入力してください"); return; }
+  if (!activeKey()) { openSheet(); (S.provider === "gemini" ? ui.geminiKey : ui.apiKey).focus(); setStatus("APIキーを入力してください", true); return; }
   running = true;
-  $("startBtn").textContent = "■ 停止"; $("startBtn").classList.add("on");
+  $("startBtn").textContent = "停止"; $("startBtn").classList.add("on");
   // iPhone は読み上げをタップ操作の中で一度鳴らさないと、以後の読み上げが無音になる
   if (S.tts && "speechSynthesis" in window) speechSynthesis.speak(new SpeechSynthesisUtterance(""));
   // 通訳中に画面が消えると聞き取りが止まるので、スリープを防ぐ
@@ -450,7 +486,7 @@ function stop() {
   const r = rec; rec = null;
   try { r?.stop(); } catch {}
   wakeLock?.release().catch(() => {}); wakeLock = null;
-  $("startBtn").textContent = "● 開始"; $("startBtn").classList.remove("on");
+  $("startBtn").textContent = "開始"; $("startBtn").classList.remove("on");
   $("live").textContent = "";
   endPara();
   setStatus("停止中");
@@ -459,17 +495,27 @@ function swapDir() {
   S.dir = S.dir === "ja-en" ? "en-ja" : "ja-en"; save(); applyUi(); endPara();
   if (running) { const r = rec; rec = null; try { r?.abort(); } catch {} startRec(); }
 }
-function setStatus(s) { $("status").textContent = s; }
+function setStatus(s, isErr = false) {
+  $("status").textContent = s;
+  $("status").classList.toggle("err", isErr);
+  document.body.style.setProperty("--dock-h", $("dock").offsetHeight + "px");
+}
 
 $("startBtn").onclick = () => running ? stop() : start();
 $("dirBtn").onclick = swapDir;
-$("settingsBtn").onclick = () => { $("settings").hidden = !$("settings").hidden; };
+$("settingsBtn").onclick = () => openSheet();
+$("closeSettings").onclick = () => openSheet(false);
+$("srcBtn").onclick = () => { S.showSrc = !S.showSrc; save(); applyUi(); };
+const resize = d => { S.fontSize = Math.min(96, Math.max(18, S.fontSize + d)); save(); applyUi(); scrollDown(); };
+$("smallerBtn").onclick = () => resize(-4);
+$("biggerBtn").onclick = () => resize(4);
 $("clearBtn").onclick = () => {
   feed.textContent = ""; units.length = 0; queue = []; speakPtr = 0; endPara();
   if ("speechSynthesis" in window) speechSynthesis.cancel();
+  openSheet(false);
 };
 document.addEventListener("keydown", e => {
-  if (e.target.closest?.("input,textarea,select")) return;
+  if (e.target.closest?.("input,textarea,select") || !$("sheet").hidden) return;
   if (e.code === "Space") { e.preventDefault(); running ? stop() : start(); }
   else if (e.key === "d" || e.key === "D") swapDir();
 });
