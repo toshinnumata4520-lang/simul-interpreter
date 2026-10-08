@@ -178,7 +178,7 @@ for (const [k, el] of Object.entries(ui)) {
 function applyUi() {
   document.body.style.setProperty("--fs", S.fontSize + "px");
   ui.fontSize.value = S.fontSize;
-  $("dirBtn").textContent = S.dir === "ja-en" ? "日→英" : "英→日";
+  $("dirBtn").textContent = { "ja-en": "日→英", "en-ja": "英→日", auto: "自動" }[S.dir];
   document.body.classList.toggle("nosrc", !S.showSrc);
   $("srcBtn").classList.toggle("on", S.showSrc);
   document.body.style.setProperty("--dock-h", $("dock").offsetHeight + "px");
@@ -465,14 +465,61 @@ function startRec() {
   rec.start();
 }
 
+// ===== 自動モード（実験的・live.js）ここから：消すときはこのブロック、live.js、
+// start/stop/swapDir 内の「自動モード」と書かれた行を削除する =====
+let liveMod = null;
+import("./live.js").then(m => { liveMod = m; }).catch(() => {
+  if (S.dir === "auto") { S.dir = "ja-en"; save(); applyUi(); }
+});
+let autoPara = null, autoBuf = "", autoGap = null;
+
+// Live Translate は「発話の終わり」を知らせてこないので、
+// 訳す方向が変わったときと、訳の出力が途切れたときに段落を区切る
+function closeAutoPara() { autoPara?.span.classList.remove("pending"); autoPara = null; }
+function onLiveText(target, kind, text, langCode) {
+  if (kind === "src") {
+    const lang = (langCode || "").slice(0, 2);
+    if (autoPara && (!lang || lang === autoPara.srcLang)) {
+      autoPara.p.src.textContent += text;
+    } else {
+      autoBuf = (autoBuf + text).slice(-400);
+      $("live").textContent = autoBuf;
+      $("live").scrollLeft = $("live").scrollWidth;
+    }
+  } else if (kind === "tgt") {
+    if (!autoPara || autoPara.target !== target) {
+      closeAutoPara();
+      const p = newPara();
+      p.src.textContent = autoBuf.trim();
+      autoBuf = ""; $("live").textContent = "";
+      const span = document.createElement("span"); span.className = "pending";
+      p.tgt.append(span);
+      autoPara = { target, srcLang: target === "en" ? "ja" : "en", p, span };
+    }
+    autoPara.span.textContent += text;
+    clearTimeout(autoGap);
+    autoGap = setTimeout(closeAutoPara, 2500);
+    scrollDown();
+  }
+}
+async function startAuto() {
+  if (!liveMod) { setStatus("自動モードを読み込めませんでした", true); stop(); return; }
+  const ok = await liveMod.startLive({ key: S.geminiKey, playAudio: () => S.tts, onText: onLiveText, onStatus: setStatus });
+  if (!ok) stop();
+}
+function stopAuto() { liveMod?.stopLive(); clearTimeout(autoGap); closeAutoPara(); autoBuf = ""; }
+// ===== 自動モードここまで =====
+
 function start() {
-  if (!activeKey()) { openSheet(); (S.provider === "gemini" ? ui.geminiKey : ui.apiKey).focus(); setStatus("APIキーを入力してください", true); return; }
+  if (S.dir === "auto" && !S.geminiKey) { openSheet(); ui.geminiKey.focus(); setStatus("自動モードには Gemini APIキーが必要です", true); return; }   // 自動モード
+  if (S.dir !== "auto" && !activeKey()) { openSheet(); (S.provider === "gemini" ? ui.geminiKey : ui.apiKey).focus(); setStatus("APIキーを入力してください", true); return; }
   running = true;
   $("startBtn").textContent = "停止"; $("startBtn").classList.add("on");
   // iPhone は読み上げをタップ操作の中で一度鳴らさないと、以後の読み上げが無音になる
   if (S.tts && "speechSynthesis" in window) speechSynthesis.speak(new SpeechSynthesisUtterance(""));
   // 通訳中に画面が消えると聞き取りが止まるので、スリープを防ぐ
   navigator.wakeLock?.request("screen").then(l => { wakeLock = l; }).catch(() => {});
+  if (S.dir === "auto") startAuto(); else   // 自動モード
   startRec();
 }
 let wakeLock = null;
@@ -485,6 +532,7 @@ function stop() {
   clearTimeout(pauseTimer);
   const r = rec; rec = null;
   try { r?.stop(); } catch {}
+  stopAuto();   // 自動モード
   wakeLock?.release().catch(() => {}); wakeLock = null;
   $("startBtn").textContent = "開始"; $("startBtn").classList.remove("on");
   $("live").textContent = "";
@@ -492,8 +540,11 @@ function stop() {
   setStatus("停止中");
 }
 function swapDir() {
-  S.dir = S.dir === "ja-en" ? "en-ja" : "ja-en"; save(); applyUi(); endPara();
-  if (running) { const r = rec; rec = null; try { r?.abort(); } catch {} startRec(); }
+  const order = liveMod ? ["ja-en", "en-ja", "auto"] : ["ja-en", "en-ja"];   // 自動モード
+  const wasRunning = running;
+  if (wasRunning) stop();
+  S.dir = order[(order.indexOf(S.dir) + 1) % order.length]; save(); applyUi(); endPara();
+  if (wasRunning) start();
 }
 function setStatus(s, isErr = false) {
   $("status").textContent = s;
