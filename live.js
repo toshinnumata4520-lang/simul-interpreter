@@ -3,6 +3,8 @@
 // 日本語向けセッションは日本語の発話には黙るので、話した言語の反対側だけが訳を返す。
 // 不要になったらこのファイルと index.html の「自動モード」部分を消せば元に戻る。
 
+import { L } from "./i18n.js";
+
 const MODEL = "gemini-3.5-live-translate-preview";
 const WS_URL = "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent";
 const TARGETS = ["en", "ja"];
@@ -24,7 +26,7 @@ export async function startLive({ key, playAudio, onText, onStatus }) {
     st.stream = await navigator.mediaDevices.getUserMedia({
       audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
   } catch {
-    onStatus("マイクの使用が許可されていません", true);
+    onStatus(L("マイクの使用が許可されていません", "Microphone access is not allowed"), true);
     stopLive();
     return false;
   }
@@ -41,7 +43,7 @@ export async function startLive({ key, playAudio, onText, onStatus }) {
   st.node.connect(mute).connect(ctx.destination);
 
   for (const target of TARGETS) connect(st, target);
-  onStatus("🎙 自動（日⇄英）で聞き取り中");
+  onStatus(L("🎙 自動（日⇄英）で聞き取り中", "🎙 Listening (Auto JA⇄EN)"));
   return true;
 }
 
@@ -78,7 +80,7 @@ function connect(st, target) {
   ws.onmessage = async e => {
     const msg = JSON.parse(typeof e.data === "string" ? e.data : await e.data.text());
     if (msg.setupComplete) {
-      if (st.retries) st.onStatus("🎙 自動（日⇄英）で聞き取り中");   // 再接続できたら表示を戻す
+      if (st.retries) st.onStatus(L("🎙 自動（日⇄英）で聞き取り中", "🎙 Listening (Auto JA⇄EN)"));   // 再接続できたら表示を戻す
       sess.ready = true; st.retries = 0;
       const old = st.active[target];
       if (old !== sess) {
@@ -106,8 +108,8 @@ function connect(st, target) {
     if (st.stopped || state !== st || st.active[target] !== sess) return;   // 張り替え済みの古い接続なら何もしない
     // 予期せず切れたら、少し待って張り直す
     st.active[target] = null;
-    if (++st.retries > 6) { st.onStatus(`自動モードの接続が切れました（${e.code} ${e.reason || ""}）。停止→開始で再接続してください`, true); return; }
-    st.onStatus(`再接続中…（${e.code}${e.reason ? " " + e.reason : ""}）`, e.code !== 1000);
+    if (++st.retries > 6) { st.onStatus(L(`自動モードの接続が切れました（${e.code} ${e.reason || ""}）。停止→開始で再接続してください`, `Auto mode disconnected (${e.code} ${e.reason || ""}). Press Stop → Start to reconnect`), true); return; }
+    st.onStatus(L(`再接続中…（${e.code}${e.reason ? " " + e.reason : ""}）`, `Reconnecting… (${e.code}${e.reason ? " " + e.reason : ""})`), e.code !== 1000);
     setTimeout(() => { if (!st.stopped && state === st && !st.active[target]) connect(st, target); }, 1000 * st.retries);
   };
 }

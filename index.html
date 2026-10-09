@@ -92,20 +92,20 @@ kbd{border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:.9em}
 <body style="--fs:36px">
 <main id="feed">
   <div id="empty">
-    下の <b>●</b> を押して話し始めてください<br>
-    <span class="kbd-hint"><kbd>Space</kbd> 開始/停止 ・ <kbd>D</kbd> 方向切替</span>
+    <span data-en="Press &lt;b&gt;Start&lt;/b&gt; below and begin speaking">下の <b>●</b> を押して話し始めてください</span><br>
+    <span class="kbd-hint" data-en="&lt;kbd&gt;Space&lt;/kbd&gt; start/stop / &lt;kbd&gt;D&lt;/kbd&gt; switch direction"><kbd>Space</kbd> 開始/停止 ・ <kbd>D</kbd> 方向切替</span>
   </div>
 </main>
 
 <div id="dock">
   <div id="live"></div>
   <div id="bar">
-    <button id="dirBtn" class="ib" title="通訳方向（D キー）">日→英</button>
-    <button id="srcBtn" class="ib" title="原文の表示">原文</button>
-    <button id="smallerBtn" class="ib" title="文字を小さく" aria-label="文字を小さく">A−</button>
-    <button id="startBtn" title="開始/停止（スペースキー）">開始</button>
-    <button id="biggerBtn" class="ib" title="文字を大きく" aria-label="文字を大きく">A＋</button>
-    <button id="settingsBtn" class="ib" title="設定" aria-label="設定">⚙</button>
+    <button id="dirBtn" class="ib" title="通訳方向（D キー）" data-en-title="Direction (D key)">日→英</button>
+    <button id="srcBtn" class="ib" title="原文の表示" data-en-title="Show original" data-en="Orig">原文</button>
+    <button id="smallerBtn" class="ib" title="文字を小さく" aria-label="文字を小さく" data-en-title="Smaller text" data-en-aria="Smaller text">A−</button>
+    <button id="startBtn" title="開始/停止（スペースキー）" data-en-title="Start/Stop (Space)">開始</button>
+    <button id="biggerBtn" class="ib" title="文字を大きく" aria-label="文字を大きく" data-en-title="Larger text" data-en-aria="Larger text">A＋</button>
+    <button id="settingsBtn" class="ib" title="設定" aria-label="設定" data-en-title="Settings" data-en-aria="Settings">⚙</button>
   </div>
   <div id="statusline">
     <span id="status">停止中</span>
@@ -115,71 +115,79 @@ kbd{border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:.9em}
 </div>
 
 <div id="sheet" hidden>
-  <div class="sheet-head"><h2>設定</h2><button id="closeSettings">完了</button></div>
+  <div class="sheet-head"><h2 data-en="Settings">設定</h2><button id="closeSettings" data-en="Done">完了</button></div>
   <section id="settings">
+    <label><span data-en="Display language">表示言語</span>
+      <select id="uiLang">
+        <option value="ja">日本語</option>
+        <option value="en">English</option>
+      </select></label>
     <div class="easy" data-for="gemini">
-      <h3>かんたん設定（Googleでログインするだけ）</h3>
-      <p class="note">あなたのGoogleアカウントに通訳用の無料APIキーを自動で作り、このアプリに設定します（1〜2分）。キーはこの端末の中にだけ保存されます。</p>
-      <p class="note">⚠ 無料キーで送った会話は、Googleのサービス改善（学習）に使われ、人が読むこともあります。</p>
-      <label class="row"><input id="agree" type="checkbox"> 面談・保護者対応・生徒の個人情報の話には使いません</label>
-      <button id="easyBtn" class="big" disabled>Googleでかんたん設定</button>
-      <p class="note">ログイン時に「Googleで確認されていません」と出たら「詳細」→「移動」で進めてください。<a href="privacy.html" target="_blank">プライバシーポリシー</a></p>
+      <h3 data-en="Easy setup (just sign in with Google)">かんたん設定（Googleでログインするだけ）</h3>
+      <p class="note" data-en="Creates a free API key for the interpreter in your Google account and sets it up in this app (1–2 minutes). The key is stored only on this device.">あなたのGoogleアカウントに通訳用の無料APIキーを自動で作り、このアプリに設定します（1〜2分）。キーはこの端末の中にだけ保存されます。</p>
+      <p class="note" data-en="⚠ Conversations sent with a free key may be used by Google to improve its services, and may be read by people.">⚠ 無料キーで送った会話は、Googleのサービス改善（学習）に使われ、人が読むこともあります。</p>
+      <label class="row"><input id="agree" type="checkbox"> <span data-en="I will not use this for meetings, parent conversations, or students' personal information">面談・保護者対応・生徒の個人情報の話には使いません</span></label>
+      <button id="easyBtn" class="big" disabled data-en="Easy setup with Google">Googleでかんたん設定</button>
+      <p class="note" data-en="If you see &quot;Google hasn't verified this app&quot; when signing in, tap &quot;Advanced&quot; → &quot;Go to …&quot; to continue. &lt;a href=&quot;privacy.html&quot; target=&quot;_blank&quot;&gt;Privacy policy&lt;/a&gt;">ログイン時に「Googleで確認されていません」と出たら「詳細」→「移動」で進めてください。<a href="privacy.html" target="_blank">プライバシーポリシー</a></p>
       <div id="easyStatus"></div>
       <details id="manual">
-        <summary>うまくいかないときは（手動で設定）</summary>
+        <summary data-en="If it doesn't work (manual setup)">うまくいかないときは（手動で設定）</summary>
         <ol>
-          <li><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio のキー作成ページ</a>を開く（Googleでログイン）</li>
-          <li>初めての場合は利用規約に同意する</li>
-          <li>「APIキーを作成」を押し、表示されたキーをコピー</li>
-          <li>この画面に戻り、下の「コピーしたキーを貼り付け」を押す</li>
+          <li data-en="Open the &lt;a href=&quot;https://aistudio.google.com/apikey&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Google AI Studio API key page&lt;/a&gt; (sign in with Google)"><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio のキー作成ページ</a>を開く（Googleでログイン）</li>
+          <li data-en="If it's your first time, accept the terms of service">初めての場合は利用規約に同意する</li>
+          <li data-en="Tap &quot;Create API key&quot; and copy the key shown">「APIキーを作成」を押し、表示されたキーをコピー</li>
+          <li data-en="Come back here and tap &quot;Paste copied key&quot; below">この画面に戻り、下の「コピーしたキーを貼り付け」を押す</li>
         </ol>
-        <button id="pasteBtn" class="sub">コピーしたキーを貼り付け</button>
+        <button id="pasteBtn" class="sub" data-en="Paste copied key">コピーしたキーを貼り付け</button>
       </details>
     </div>
-    <label>翻訳エンジン
+    <label><span data-en="Translation engine">翻訳エンジン</span>
       <select id="provider">
-        <option value="gemini">Gemini（無料枠・回数制限あり）</option>
-        <option value="claude">Claude（有料・最速）</option>
+        <option value="gemini" data-en="Gemini (free tier, rate-limited)">Gemini（無料枠・回数制限あり）</option>
+        <option value="claude" data-en="Claude (paid, fastest)">Claude（有料・最速）</option>
       </select></label>
-    <label data-for="gemini">Gemini APIキー（この端末のブラウザ内にのみ保存）
+    <label data-for="gemini"><span data-en="Gemini API key (stored only in this device's browser)">Gemini APIキー（この端末のブラウザ内にのみ保存）</span>
       <input id="geminiKey" type="password" placeholder="AQ... / AIza..." autocomplete="off"></label>
-    <label data-for="gemini">1分あたりの最大リクエスト数（無料枠の上限に合わせる）
+    <label data-for="gemini"><span data-en="Max requests per minute (match the free-tier limit)">1分あたりの最大リクエスト数（無料枠の上限に合わせる）</span>
       <input id="rpm" type="number" min="2" max="60" step="1"></label>
-    <label data-for="claude">Anthropic APIキー（この端末のブラウザ内にのみ保存）
+    <label data-for="claude"><span data-en="Anthropic API key (stored only in this device's browser)">Anthropic APIキー（この端末のブラウザ内にのみ保存）</span>
       <input id="apiKey" type="password" placeholder="sk-ant-..." autocomplete="off"></label>
-    <label data-for="claude">翻訳モデル
+    <label data-for="claude"><span data-en="Translation model">翻訳モデル</span>
       <select id="model">
-        <option value="haiku">Haiku 5.5（最速・推奨）</option>
-        <option value="sonnet">Sonnet 5.5（高品質・やや遅い）</option>
-        <option value="opus">Opus 5.5（最高品質・遅い）</option>
+        <option value="haiku" data-en="Haiku 5.5 (fastest, recommended)">Haiku 5.5（最速・推奨）</option>
+        <option value="sonnet" data-en="Sonnet 5.5 (higher quality, a bit slower)">Sonnet 5.5（高品質・やや遅い）</option>
+        <option value="opus" data-en="Opus 5.5 (best quality, slow)">Opus 5.5（最高品質・遅い）</option>
       </select></label>
-    <label>区切り方（速さ ⇄ 正確さ）
+    <label><span data-en="Segmenting (speed ⇄ accuracy)">区切り方（速さ ⇄ 正確さ）</span>
       <select id="speed">
-        <option value="fastest">最速（細かく区切る・言い直し多め）</option>
-        <option value="fast">標準（プロ通訳相当）</option>
-        <option value="accurate">正確（文の切れ目まで待つ）</option>
+        <option value="fastest" data-en="Fastest (short chunks, more corrections)">最速（細かく区切る・言い直し多め）</option>
+        <option value="fast" data-en="Standard (like a pro interpreter)">標準（プロ通訳相当）</option>
+        <option value="accurate" data-en="Accurate (waits for sentence ends)">正確（文の切れ目まで待つ）</option>
       </select></label>
-    <label>文字サイズ
+    <label><span data-en="Text size">文字サイズ</span>
       <input id="fontSize" type="range" min="18" max="96" step="2"></label>
-    <label class="row"><input id="experimental" type="checkbox"> 自動モード（話した言語を自動で判別）を方向ボタンに表示する</label>
-    <label class="row"><input id="refine" type="checkbox"> 話の区切りで訳全体を整え直す（推奨・✓が付きます）</label>
-    <label class="row"><input id="tts" type="checkbox"> 訳文を読み上げる（ヘッドホン推奨）</label>
-    <label>読み上げ速度
+    <label class="row"><input id="experimental" type="checkbox"> <span data-en="Show Auto mode (detects the spoken language) on the direction button">自動モード（話した言語を自動で判別）を方向ボタンに表示する</span></label>
+    <label class="row"><input id="refine" type="checkbox"> <span data-en="Polish the whole translation at each pause (recommended, marked ✓)">話の区切りで訳全体を整え直す（推奨・✓が付きます）</span></label>
+    <label class="row"><input id="tts" type="checkbox"> <span data-en="Read translations aloud (headphones recommended)">訳文を読み上げる（ヘッドホン推奨）</span></label>
+    <label><span data-en="Speech rate">読み上げ速度</span>
       <input id="ttsRate" type="range" min="0.8" max="2" step="0.1"></label>
-    <label>用語集（1行に1つ「原語 = 訳語」。固有名詞・専門用語の誤訳を防ぎます）
+    <label><span data-en="Glossary (one per line: &quot;source = translation&quot;; prevents mistranslating names and terms)">用語集（1行に1つ「原語 = 訳語」。固有名詞・専門用語の誤訳を防ぎます）</span>
       <textarea id="glossary" placeholder="東進 = Toshin&#10;中学NET = Chugaku NET&#10;共通テスト = Common Test"></textarea></label>
-    <button id="clearBtn" class="danger">表示をすべてクリア</button>
+    <button id="clearBtn" class="danger" data-en="Clear all text">表示をすべてクリア</button>
   </section>
 </div>
 
 <script type="module">
 import Anthropic from "https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.128.0/+esm";
+import { L, setLang, detectLang, applyStatic } from "./i18n.js";
 
 // ---------- 設定 ----------
-const DEFAULTS = { provider:"gemini", geminiKey:"", rpm:10, apiKey:"", model:"haiku", speed:"fast", fontSize:44, showSrc:true, experimental:true, refine:true, tts:false, ttsRate:1.2, glossary:"", dir:"ja-en" };
+const DEFAULTS = { provider:"gemini", geminiKey:"", rpm:10, apiKey:"", model:"haiku", speed:"fast", fontSize:44, showSrc:true, experimental:true, refine:true, tts:false, ttsRate:1.2, glossary:"", dir:"ja-en", uiLang:"" };
 const S = { ...DEFAULTS };
 try { Object.assign(S, JSON.parse(localStorage.getItem("simul-settings") || "{}")); } catch {}
 const save = () => { try { localStorage.setItem("simul-settings", JSON.stringify(S)); } catch {} };
+if (!S.uiLang) S.uiLang = detectLang();   // 最初は端末の言語に合わせる
+setLang(S.uiLang);
 // 全画面レイアウトに合わせ、以前の小さい文字サイズ設定は一度だけ新しい既定値に上げる
 if (S.uiVer !== 2) { S.fontSize = innerWidth < 600 ? 34 : 44; S.uiVer = 2; save(); }
 
@@ -201,7 +209,7 @@ const SPEEDS = {
 };
 
 const $ = id => document.getElementById(id);
-const ui = { provider:$("provider"), geminiKey:$("geminiKey"), rpm:$("rpm"), apiKey:$("apiKey"), model:$("model"), speed:$("speed"), fontSize:$("fontSize"),
+const ui = { uiLang:$("uiLang"), provider:$("provider"), geminiKey:$("geminiKey"), rpm:$("rpm"), apiKey:$("apiKey"), model:$("model"), speed:$("speed"), fontSize:$("fontSize"),
   experimental:$("experimental"), refine:$("refine"), tts:$("tts"), ttsRate:$("ttsRate"), glossary:$("glossary") };
 for (const [k, el] of Object.entries(ui)) {
   if (el.type === "checkbox") el.checked = S[k]; else el.value = S[k];
@@ -211,16 +219,20 @@ for (const [k, el] of Object.entries(ui)) {
   });
 }
 function applyUi() {
+  setLang(S.uiLang); applyStatic();
+  document.title = L("同時通訳 JA⇄EN", "Interpreter JA⇄EN");
+  $("startBtn").textContent = $("startBtn").classList.contains("on") ? L("停止", "Stop") : L("開始", "Start");
   document.body.style.setProperty("--fs", S.fontSize + "px");
   if (S.dir === "auto" && !S.experimental) { S.dir = "ja-en"; save(); }   // 自動モードを表示しない設定の人は通常モードに戻す
   ui.fontSize.value = S.fontSize;
-  $("dirBtn").textContent = { "ja-en": "日→英", "en-ja": "英→日", auto: "自動" }[S.dir];
+  $("dirBtn").textContent = { "ja-en": L("日→英", "JA→EN"), "en-ja": L("英→日", "EN→JA"), auto: L("自動", "Auto") }[S.dir];
   document.body.classList.toggle("nosrc", !S.showSrc);
   $("srcBtn").classList.toggle("on", S.showSrc);
   document.body.style.setProperty("--dock-h", $("dock").offsetHeight + "px");
   for (const el of document.querySelectorAll("[data-for]")) el.hidden = el.dataset.for !== S.provider;
 }
 applyUi();
+$("status").textContent = L("停止中", "Stopped");
 const activeKey = () => S.provider === "gemini" ? S.geminiKey : S.apiKey;
 const openSheet = (open = true) => { $("sheet").hidden = !open; };
 if (!activeKey()) openSheet();
@@ -274,7 +286,7 @@ function dispatch() {
     const wait = rateWait();
     if (wait > 0) {
       dispatchTimer = setTimeout(dispatch, wait);
-      $("queued").textContent = `無料枠の上限待ち: ${queue.length}件`;
+      $("queued").textContent = L(`無料枠の上限待ち: ${queue.length}件`, `Waiting for free-tier limit: ${queue.length}`);
       return;
     }
     const group = S.provider === "gemini" ? queue.splice(0) : [queue.shift()];
@@ -334,7 +346,7 @@ async function* streamGemini(system, prompt) {
 async function translate(idx) {
   const c = units[idx];
   const sep = S.dir === "ja-en" ? " " : "";
-  if (!activeKey()) { c.span.textContent = "（APIキー未設定）"; c.span.className = "err"; c.done = true; return; }
+  if (!activeKey()) { c.span.textContent = L("（APIキー未設定）", "(No API key)"); c.span.className = "err"; c.done = true; return; }
   let first = true;
   try {
     const gen = S.provider === "gemini" ? streamGemini(systemPrompt(), buildPrompt(idx)) : streamClaude(systemPrompt(), buildPrompt(idx));
@@ -349,8 +361,9 @@ async function translate(idx) {
       c.span.textContent = "⚠ ";
       c.span.className = "err";
       setStatus(e instanceof RateLimitError
-        ? "Gemini 無料枠の上限に達しました。少し待つか、設定の「1分あたりの最大リクエスト数」を下げてください（1日の上限の場合は日本時間の夕方16〜17時頃に回復）"
-        : "翻訳エラー: " + (e?.message || e), true);
+        ? L("Gemini 無料枠の上限に達しました。少し待つか、設定の「1分あたりの最大リクエスト数」を下げてください（1日の上限の場合は日本時間の夕方16〜17時頃に回復）",
+            "Reached the Gemini free-tier limit. Wait a moment or lower \"Max requests per minute\" in Settings (the daily limit resets around midnight Pacific time)")
+        : L("翻訳エラー: ", "Translation error: ") + (e?.message || e), true);
     }
   }
   c.done = true;
@@ -362,7 +375,7 @@ function recordLatency(ms) {
   latencies.push(ms);
   if (latencies.length > 30) latencies.shift();
   const avg = latencies.reduce((a, b) => a + b, 0) / latencies.length;
-  $("latency").textContent = `区切り→訳の表示: 直近 ${(ms / 1000).toFixed(1)}秒 / 平均 ${(avg / 1000).toFixed(1)}秒`;
+  $("latency").textContent = L(`区切り→訳の表示: 直近 ${(ms / 1000).toFixed(1)}秒 / 平均 ${(avg / 1000).toFixed(1)}秒`, `Pause→translation: last ${(ms / 1000).toFixed(1)}s / avg ${(avg / 1000).toFixed(1)}s`);
 }
 
 // ---------- 読み上げ（順番を守る） ----------
@@ -504,13 +517,13 @@ function renderLive(e) {
 }
 
 function startRec() {
-  if (!SR) { setStatus("このブラウザは音声認識に対応していません。Safari / Edge / Chrome で開いてください。", true); return; }
+  if (!SR) { setStatus(L("このブラウザは音声認識に対応していません。Safari / Edge / Chrome で開いてください。", "This browser doesn't support speech recognition. Please open it in Safari, Edge, or Chrome."), true); return; }
   committed = {}; prevText = {};
   rec = new SR();
   rec.lang = S.dir === "ja-en" ? "ja-JP" : "en-US";
   rec.continuous = true;
   rec.interimResults = true;
-  rec.onstart = () => { committed = {}; prevText = {}; setStatus(`🎙 聞き取り中（${rec.lang}）`); };
+  rec.onstart = () => { committed = {}; prevText = {}; setStatus(L(`🎙 聞き取り中（${rec.lang}）`, `🎙 Listening (${rec.lang})`)); };
   rec.onresult = e => {
     for (let i = e.resultIndex; i < e.results.length; i++) {
       const r = e.results[i], t = r[0].transcript;
@@ -525,14 +538,14 @@ function startRec() {
     renderLive(e);
   };
   rec.onerror = e => {
-    if (e.error === "not-allowed") { setStatus("マイクの使用が許可されていません", true); stop(); }
-    else if (e.error !== "no-speech" && e.error !== "aborted") setStatus("音声認識エラー: " + e.error, true);
+    if (e.error === "not-allowed") { setStatus(L("マイクの使用が許可されていません", "Microphone access is not allowed"), true); stop(); }
+    else if (e.error !== "no-speech" && e.error !== "aborted") setStatus(L("音声認識エラー: ", "Speech recognition error: ") + e.error, true);
   };
   // 連続認識はブラウザ側で定期的に切れるので自動で再開する
   // iPhone は再開を拒むことがあるので、その場合はタップでの再開を促す
   rec.onend = () => {
     if (!running || !rec) return;
-    try { rec.start(); } catch { setStatus("聞き取りが止まりました。停止 → 開始 で再開してください", true); }
+    try { rec.start(); } catch { setStatus(L("聞き取りが止まりました。停止 → 開始 で再開してください", "Listening stopped. Press Stop → Start to resume"), true); }
   };
   rec.start();
 }
@@ -578,7 +591,7 @@ function onLiveText(target, kind, text, langCode) {
   }
 }
 async function startAuto() {
-  if (!liveMod) { setStatus("自動モードを読み込めませんでした", true); stop(); return; }
+  if (!liveMod) { setStatus(L("自動モードを読み込めませんでした", "Couldn't load Auto mode"), true); stop(); return; }
   const ok = await liveMod.startLive({ key: S.geminiKey, playAudio: () => S.tts, onText: onLiveText, onStatus: setStatus });
   if (!ok) stop();
 }
@@ -589,7 +602,7 @@ function stopAuto() { liveMod?.stopLive(); clearTimeout(autoGap); closeAutoPara(
 let setupMod = null;
 import("./setup.js").then(m => {
   setupMod = m;
-  if (!m.CLIENT_ID) { $("easyBtn").textContent = "かんたん設定（準備中）"; $("manual").open = true; }
+  if (!m.CLIENT_ID) { $("easyBtn").textContent = L("かんたん設定（準備中）", "Easy setup (not ready yet)"); $("manual").open = true; }
   else if (!S.geminiKey) m.preloadGis();
 }).catch(() => { $("manual").open = true; });
 const easyStatus = (msg, cls = "") => { $("easyStatus").textContent = msg; $("easyStatus").className = cls; };
@@ -600,7 +613,7 @@ $("easyBtn").onclick = async () => {
     const key = await setupMod.autoSetup({ model: GEMINI_MODEL, onStep: m => easyStatus(m) });
     applyKey(key);
   } catch (e) {
-    easyStatus((e?.message || String(e)) + (e?.fallback ? "\n下の「手動で設定」の手順で設定してください。" : ""), "err");
+    easyStatus((e?.message || String(e)) + (e?.fallback ? L("\n下の「手動で設定」の手順で設定してください。", "\nPlease use the manual setup steps below.") : ""), "err");
     if (e?.fallback) $("manual").open = true;
   } finally {
     $("easyBtn").disabled = !$("agree").checked;
@@ -610,7 +623,7 @@ $("pasteBtn").onclick = async () => {
   let text = "";
   try { text = (await navigator.clipboard.readText()).trim(); } catch {}
   if (!/^(AIza|AQ\.)[\w.-]{20,}$/.test(text)) {
-    easyStatus("コピーしたキーを読み取れませんでした。下の「Gemini APIキー」欄に長押しで貼り付けてください", "err");
+    easyStatus(L("コピーしたキーを読み取れませんでした。下の「Gemini APIキー」欄に長押しで貼り付けてください", "Couldn't read the copied key. Long-press the \"Gemini API key\" field below and paste it there"), "err");
     ui.geminiKey.focus();
     return;
   }
@@ -619,14 +632,14 @@ $("pasteBtn").onclick = async () => {
 function applyKey(key) {
   S.geminiKey = key; S.provider = "gemini"; save();
   ui.geminiKey.value = key; ui.provider.value = "gemini"; applyUi();
-  easyStatus("✓ 設定が完了しました。「完了」を押して、下の「開始」から使えます", "ok");
+  easyStatus(L("✓ 設定が完了しました。「完了」を押して、下の「開始」から使えます", "✓ Setup complete. Tap \"Done\", then press \"Start\" below"), "ok");
 }
 
 function start() {
-  if (S.dir === "auto" && !S.geminiKey) { openSheet(); ui.geminiKey.focus(); setStatus("自動モードには Gemini APIキーが必要です", true); return; }   // 自動モード
-  if (S.dir !== "auto" && !activeKey()) { openSheet(); (S.provider === "gemini" ? ui.geminiKey : ui.apiKey).focus(); setStatus("APIキーを入力してください", true); return; }
+  if (S.dir === "auto" && !S.geminiKey) { openSheet(); ui.geminiKey.focus(); setStatus(L("自動モードには Gemini APIキーが必要です", "Auto mode needs a Gemini API key"), true); return; }   // 自動モード
+  if (S.dir !== "auto" && !activeKey()) { openSheet(); (S.provider === "gemini" ? ui.geminiKey : ui.apiKey).focus(); setStatus(L("APIキーを入力してください", "Please enter an API key"), true); return; }
   running = true;
-  $("startBtn").textContent = "停止"; $("startBtn").classList.add("on");
+  $("startBtn").classList.add("on"); $("startBtn").textContent = L("停止", "Stop");
   // iPhone は読み上げをタップ操作の中で一度鳴らさないと、以後の読み上げが無音になる
   if (S.tts && "speechSynthesis" in window) speechSynthesis.speak(new SpeechSynthesisUtterance(""));
   // 通訳中に画面が消えると聞き取りが止まるので、スリープを防ぐ
@@ -642,7 +655,7 @@ document.addEventListener("visibilitychange", () => {
   // （閉じずに放置すると、次に開始したとき古い接続が残っていて断られることがある）
   if (document.visibilityState === "hidden" && running && S.dir === "auto") {   // 自動モード
     stop();
-    setStatus("画面を離れたため停止しました。「開始」で再開できます");
+    setStatus(L("画面を離れたため停止しました。「開始」で再開できます", "Stopped because you left the screen. Press \"Start\" to resume"));
   }
 });
 addEventListener("pagehide", () => { if (running) stop(); });
@@ -653,10 +666,10 @@ function stop() {
   try { r?.stop(); } catch {}
   stopAuto();   // 自動モード
   wakeLock?.release().catch(() => {}); wakeLock = null;
-  $("startBtn").textContent = "開始"; $("startBtn").classList.remove("on");
+  $("startBtn").classList.remove("on"); $("startBtn").textContent = L("開始", "Start");
   $("live").textContent = "";
   endPara();
-  setStatus("停止中");
+  setStatus(L("停止中", "Stopped"));
 }
 function swapDir() {
   const order = liveMod && S.experimental ? ["ja-en", "en-ja", "auto"] : ["ja-en", "en-ja"];   // 自動モード

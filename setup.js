@@ -3,6 +3,8 @@
 // キーは呼び出し元に返すだけ（保存は index.html 側で、端末のブラウザ内のみ）。
 // ログインの許可は設定が終わったらその場で取り消す。
 
+import { L } from "./i18n.js";
+
 // Google Cloud の OAuth クライアントID（設定専用プロジェクト simul-interpreter-setup で作成）
 export const CLIENT_ID = "1060802056748-u9g3ko4s3a601qivk0i9ovimr3qmu79h.apps.googleusercontent.com";
 
@@ -21,7 +23,7 @@ function loadGis() {
     const s = document.createElement("script");
     s.src = "https://accounts.google.com/gsi/client";
     s.onload = resolve;
-    s.onerror = () => { gisLoaded = null; reject(new SetupError("Googleのログイン機能を読み込めませんでした。通信状態を確認してください", { fallback: false })); };
+    s.onerror = () => { gisLoaded = null; reject(new SetupError(L("Googleのログイン機能を読み込めませんでした。通信状態を確認してください", "Couldn't load Google sign-in. Check your connection"), { fallback: false })); };
     document.head.append(s);
   });
 }
@@ -34,8 +36,8 @@ function getToken() {
     const client = google.accounts.oauth2.initTokenClient({
       client_id: CLIENT_ID,
       scope: SCOPE,
-      callback: r => r.error ? reject(new SetupError("Googleのログインが完了しませんでした（" + r.error + "）", { fallback: false })) : resolve(r.access_token),
-      error_callback: e => reject(new SetupError(e.type === "popup_closed" ? "ログイン画面が閉じられました。もう一度お試しください" : "Googleのログインを開けませんでした（" + e.type + "）。ポップアップを許可してください", { fallback: false })),
+      callback: r => r.error ? reject(new SetupError(L("Googleのログインが完了しませんでした（", "Google sign-in didn't complete (") + r.error + L("）", ")"), { fallback: false })) : resolve(r.access_token),
+      error_callback: e => reject(new SetupError(e.type === "popup_closed" ? L("ログイン画面が閉じられました。もう一度お試しください", "The sign-in window was closed. Please try again") : L("Googleのログインを開けませんでした（", "Couldn't open Google sign-in (") + e.type + L("）。ポップアップを許可してください", "). Please allow pop-ups"), { fallback: false })),
     });
     client.requestAccessToken({ prompt: "consent" });
   });
@@ -60,12 +62,12 @@ async function api(token, method, url, body) {
 // 長時間操作（Operation）の完了を待つ
 async function waitOp(token, base, op, label, onStep) {
   for (let i = 0; !op.done; i++) {
-    if (i > 60) throw new SetupError(label + "が時間内に終わりませんでした");
+    if (i > 60) throw new SetupError(label + L("が時間内に終わりませんでした", " did not finish in time"));
     await new Promise(r => setTimeout(r, i < 5 ? 1000 : 2000));
     op = await api(token, "GET", `${base}/${op.name}`);
     onStep?.();
   }
-  if (op.error) throw new SetupError(label + "に失敗しました：" + (op.error.message || op.error.code));
+  if (op.error) throw new SetupError(label + L("に失敗しました：", " failed: ") + (op.error.message || op.error.code));
   return op.response || {};
 }
 
@@ -73,35 +75,35 @@ async function waitOp(token, base, op, label, onStep) {
 async function findOrCreateProject(token, step) {
   const list = await api(token, "GET",
     `https://cloudresourcemanager.googleapis.com/v1/projects?filter=${encodeURIComponent(`name:${DISPLAY_NAME} lifecycleState:ACTIVE`)}`);
-  if (list.projects?.length) { step("既存の通訳用プロジェクトを使います"); return list.projects[0].projectId; }
+  if (list.projects?.length) { step(L("既存の通訳用プロジェクトを使います", "Using your existing interpreter project")); return list.projects[0].projectId; }
   const id = `${DISPLAY_NAME}-${Math.random().toString(36).slice(2, 8)}`;
-  step("通訳用のプロジェクトを作成しています…");
+  step(L("通訳用のプロジェクトを作成しています…", "Creating the interpreter project…"));
   let op;
   try {
     op = await api(token, "POST", "https://cloudresourcemanager.googleapis.com/v1/projects", { projectId: id, name: DISPLAY_NAME });
   } catch (e) {
     // Google Cloud を一度も使っていないアカウントは、利用規約への同意が済んでいないため作れない
-    if (/terms of service|tos/i.test(e.message)) throw new SetupError("Google Cloud の利用規約への同意が済んでいないため、自動では作れませんでした");
+    if (/terms of service|tos/i.test(e.message)) throw new SetupError(L("Google Cloud の利用規約への同意が済んでいないため、自動では作れませんでした", "Couldn't create it automatically because the Google Cloud terms of service haven't been accepted"));
     throw e;
   }
-  await waitOp(token, "https://cloudresourcemanager.googleapis.com/v1", op, "プロジェクトの作成");
+  await waitOp(token, "https://cloudresourcemanager.googleapis.com/v1", op, L("プロジェクトの作成", "Project creation"));
   return id;
 }
 
 async function enable(token, project, service, label, step) {
-  step(label + "を有効にしています…");
+  step(L(label + "を有効にしています…", "Enabling " + label + "…"));
   const op = await api(token, "POST", `https://serviceusage.googleapis.com/v1/projects/${project}/services/${service}:enable`);
-  await waitOp(token, "https://serviceusage.googleapis.com/v1", op, label + "の有効化");
+  await waitOp(token, "https://serviceusage.googleapis.com/v1", op, L(label + "の有効化", "Enabling " + label));
 }
 
 async function createKey(token, project, step) {
-  step("APIキーを作成しています…");
+  step(L("APIキーを作成しています…", "Creating the API key…"));
   const op = await api(token, "POST", `https://apikeys.googleapis.com/v2/projects/${project}/locations/global/keys`, {
     displayName: "同時通訳アプリ",
     // 万一キーが漏れても Gemini API 以外には使えないように制限する
     restrictions: { apiTargets: [{ service: GEMINI_API }] },
   });
-  const res = await waitOp(token, "https://apikeys.googleapis.com/v2", op, "APIキーの作成");
+  const res = await waitOp(token, "https://apikeys.googleapis.com/v2", op, L("APIキーの作成", "API key creation"));
   if (res.keyString) return res.keyString;
   const k = await api(token, "GET", `https://apikeys.googleapis.com/v2/${res.name}/keyString`);
   return k.keyString;
@@ -109,7 +111,7 @@ async function createKey(token, project, step) {
 
 // 作ったキーで Gemini が実際に使えるか確かめる（有効化の反映に少し時間がかかることがある）
 async function testKey(key, model, step) {
-  step("キーが使えるか確認しています…");
+  step(L("キーが使えるか確認しています…", "Checking that the key works…"));
   for (let i = 0; i < 12; i++) {
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: "POST",
@@ -117,22 +119,22 @@ async function testKey(key, model, step) {
       body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "Say OK." }] }], generationConfig: { maxOutputTokens: 5 } }),
     });
     if (r.ok) return;
-    if (r.status !== 403 && r.status !== 400) throw new SetupError("キーの確認に失敗しました（" + r.status + "）", { fallback: false });
+    if (r.status !== 403 && r.status !== 400) throw new SetupError(L("キーの確認に失敗しました（", "Key check failed (") + r.status + L("）", ")"), { fallback: false });
     await new Promise(res => setTimeout(res, 5000));
   }
-  throw new SetupError("キーは作れましたが、まだ使えるようになっていません。数分後にもう一度お試しください", { fallback: false });
+  throw new SetupError(L("キーは作れましたが、まだ使えるようになっていません。数分後にもう一度お試しください", "The key was created but isn't active yet. Please try again in a few minutes"), { fallback: false });
 }
 
 // 全体の流れ。成功したら APIキーの文字列を返す
 export async function autoSetup({ model, onStep }) {
-  if (!CLIENT_ID) throw new SetupError("かんたん設定はまだ準備中です");
+  if (!CLIENT_ID) throw new SetupError(L("かんたん設定はまだ準備中です", "Easy setup isn't ready yet"));
   const step = msg => onStep?.(msg);
   await loadGis();
-  step("Googleのログイン画面を開いています…");
+  step(L("Googleのログイン画面を開いています…", "Opening Google sign-in…"));
   const token = await getToken();
   try {
     const project = await findOrCreateProject(token, step);
-    await enable(token, project, "apikeys.googleapis.com", "キー管理の機能", step);
+    await enable(token, project, "apikeys.googleapis.com", L("キー管理の機能", "the API Keys service"), step);
     await enable(token, project, GEMINI_API, "Gemini API", step);
     const key = await createKey(token, project, step);
     await testKey(key, model, step);
