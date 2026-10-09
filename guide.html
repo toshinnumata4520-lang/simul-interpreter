@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>同時通訳アプリの使い方</title>
+<style>
+:root{ --bg:#ffffff; --text:#1b1f24; --muted:#5b6472; --line:#dfe3e8; --accent:#2563eb; --warn:#b45309; --warnbg:#fff7ed; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0b0d10; --text:#eef1f5; --muted:#98a1ae; --line:#2a2f38; --accent:#7aa7ff; --warn:#fbbf24; --warnbg:#2a2113; } }
+@media print{ :root{ --bg:#fff; --text:#000; } .noprint{display:none} }
+body{margin:0 auto;max-width:720px;padding:24px 18px 48px;line-height:1.8;color:var(--text);background:var(--bg);
+  font-family:system-ui,-apple-system,"Hiragino Sans","Segoe UI","Yu Gothic UI","Meiryo",sans-serif}
+h1{font-size:24px;margin:0 0 4px} h2{font-size:18px;margin:28px 0 8px;border-left:4px solid var(--accent);padding-left:10px}
+.lead{color:var(--muted);margin:0 0 20px}
+.qr{display:flex;gap:18px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-radius:12px;padding:16px}
+#qrcode{background:#fff;padding:8px;border-radius:8px;width:176px;height:176px}
+.url{word-break:break-all;font-size:15px}
+ol li{margin:6px 0}
+.warn{background:var(--warnbg);border:1px solid var(--warn);border-radius:10px;padding:12px 14px;margin-top:12px}
+.warn b{color:var(--warn)}
+.foot{margin-top:32px;font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<h1>同時通訳アプリ（日本語 ⇄ 英語）</h1>
+<p class="lead">話した言葉をその場で訳して、大きな字幕で表示するアプリです。iPhoneのSafari、またはパソコンのChrome・Edgeで使えます。</p>
+
+<div class="qr">
+  <div id="qrcode" aria-label="アプリのQRコード"></div>
+  <div>
+    <b>スマホのカメラでQRコードを読み取ってください</b><br>
+    <span class="url">https://toshinnumata4520-lang.github.io/simul-interpreter/</span>
+  </div>
+</div>
+
+<h2>はじめての設定（1〜2分・最初の1回だけ）</h2>
+<ol>
+  <li>QRコードからアプリを開くと、設定画面が出ます。</li>
+  <li>「面談・保護者対応・生徒の個人情報の話には使いません」にチェックを入れます。</li>
+  <li>「<b>Googleでかんたん設定</b>」を押し、自分のGoogleアカウントを選びます。</li>
+  <li>「このアプリは Google で確認されていません」と出たら、「<b>詳細</b>」→「<b>同時通訳 かんたん設定（安全ではないページ）に移動</b>」を押します。<br>（塾の内部向けに作ったアプリのため表示されます）</li>
+  <li>許可を求める画面で「<b>続行</b>」（または「許可」）を押します。</li>
+  <li>30秒〜1分ほど待つと「✓ 設定が完了しました」と出ます。「完了」を押して設定画面を閉じます。</li>
+</ol>
+<p>うまくいかないときは、設定画面の「うまくいかないときは（手動で設定）」の手順でも設定できます。</p>
+
+<h2>使い方</h2>
+<ol>
+  <li>画面下の <b>「開始」</b> を押し、マイクの使用を「許可」します。</li>
+  <li>話すと、訳が大きな文字で出てきます。</li>
+  <li>左下のボタンで通訳の向きを切り替えます：<b>日→英</b> ／ <b>英→日</b> ／ <b>自動</b>（話した言語を自動で判別）。</li>
+  <li><b>A− / A＋</b> で文字の大きさ、<b>原文</b> で元の言葉の表示を切り替えられます。</li>
+  <li>終わったら「停止」を押します。画面を消したり他のアプリに切り替えたりすると止まります。</li>
+</ol>
+
+<div class="warn">
+  <b>⚠ 大切なお願い</b><br>
+  このアプリは、各自のGoogleアカウントの無料枠を使っています。無料枠で送った会話は、Googleのサービス改善（学習）に使われ、人が読むこともあります。<br>
+  <b>面談、保護者対応、生徒の名前・成績・家庭の事情などの話では使わないでください。</b>
+</div>
+
+<h2>よくある質問</h2>
+<p><b>お金はかかりますか？</b><br>かかりません。各自のGoogleアカウントの無料枠で動きます（話し続けて1日40〜50分程度が目安）。</p>
+<p><b>他の人の分と取り合いになりますか？</b><br>なりません。一人ひとり自分の枠を使います。</p>
+<p><b>やめたいときは？</b><br>ブラウザの履歴・サイトデータを消すと、端末の設定は消えます。</p>
+
+<p class="foot noprint"><a href="./">アプリを開く</a> ・ <a href="privacy.html">プライバシーポリシー</a></p>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+try {
+  new QRCode(document.getElementById("qrcode"), { text: "https://toshinnumata4520-lang.github.io/simul-interpreter/", width: 160, height: 160 });
+} catch (e) { document.getElementById("qrcode").textContent = "QRコードを表示できませんでした"; }
+</script>
+</body>
+</html>
