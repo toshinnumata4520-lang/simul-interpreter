@@ -18,7 +18,7 @@ export async function startLive({ key, playAudio, onText, onStatus }) {
   stopLive();
   // iPhone はタップ操作の中で AudioContext を作らないと音が出ない・止まるので、await より前に作る
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const st = state = { ctx, key, playAudio, onText, onStatus, sockets: [], stream: null, node: null,
+  const st = state = { ctx, key, playAudio, onText, onStatus, sockets: [], active: {}, stream: null, node: null,
     pending: [], pendingLen: 0, playAt: 0, stopped: false, retries: 0 };
   try {
     st.stream = await navigator.mediaDevices.getUserMedia({
@@ -49,16 +49,20 @@ export function stopLive() {
   const st = state; state = null;
   if (!st) return;
   st.stopped = true;
-  for (const s of st.sockets) try { s.ws.close(); } catch {}
+  // 正しく閉じないと、サーバー側に古い接続が残って次の接続が 409 で断られることがある
+  for (const s of st.sockets) try { s.ws.close(1000); } catch {}
   st.stream?.getTracks().forEach(t => t.stop());
   try { st.node?.disconnect(); } catch {}
   st.ctx.close().catch(() => {});
 }
 
+// 音声を流す先は、言語ごとに「今使っている接続」1つだけ（st.active[target]）。
+// 張り替え中は新旧の接続が一時的に並ぶ。
 function connect(st, target) {
   const ws = new WebSocket(`${WS_URL}?key=${encodeURIComponent(st.key)}`);
   const sess = { ws, target, ready: false };
-  st.sockets = st.sockets.filter(s => s.target !== target).concat(sess);
+  st.sockets.push(sess);
+  if (!st.active[target]) st.active[target] = sess;
   ws.onopen = () => ws.send(JSON.stringify({ setup: {
     model: `models/${MODEL}`,
     // 文字起こしの指定は generationConfig の中ではなく setup の直下（公式例の位置では 1007 エラーになる）
@@ -68,16 +72,25 @@ function connect(st, target) {
       responseModalities: ["AUDIO"],
       translationConfig: { targetLanguageCode: target, echoTargetLanguage: false },
     },
-    // 切断後に続きから再開できるよう、受け取った再開用の印を渡す
-    ...(st.handles?.[target] ? { sessionResumption: { handle: st.handles[target] } } : {}),
+    // 続きからの再開（sessionResumption）は使わない。再開すると訳の質が落ちるという報告があるため、
+    // 張り替えは毎回まっさらな接続で行う
   } }));
   ws.onmessage = async e => {
     const msg = JSON.parse(typeof e.data === "string" ? e.data : await e.data.text());
-    if (msg.setupComplete) { sess.ready = true; st.retries = 0; return; }
-    if (msg.sessionResumptionUpdate?.resumable && msg.sessionResumptionUpdate.newHandle)
-      (st.handles ||= {})[target] = msg.sessionResumptionUpdate.newHandle;
-    // 接続時間の上限が近いという通知：新しい接続を張ってから古い方を閉じる
-    if (msg.goAway) { connect(st, target); setTimeout(() => { try { ws.close(); } catch {} }, 1500); return; }
+    if (msg.setupComplete) {
+      if (st.retries) st.onStatus("🎙 自動（日⇄英）で聞き取り中");   // 再接続できたら表示を戻す
+      sess.ready = true; st.retries = 0;
+      const old = st.active[target];
+      if (old !== sess) {
+        // 新しい接続が使えるようになったら音声の送り先を切り替え、
+        // 古い接続は言いかけの訳を出し切る時間を少し置いてから正しく閉じる
+        st.active[target] = sess;
+        setTimeout(() => closeSession(st, old), 3000);
+      }
+      return;
+    }
+    // 接続時間の上限が近いという通知：サーバーに切られる前に、こちらから新しい接続へ張り替える
+    if (msg.goAway) { if (st.active[target] === sess && !sess.replacing) { sess.replacing = true; connect(st, target); } return; }
     const c = msg.serverContent;
     if (!c) return;
     // 原文は両セッションに同じものが届くので、英語向けセッションの分だけ使う
@@ -89,12 +102,20 @@ function connect(st, target) {
   };
   ws.onclose = e => {
     sess.ready = false;
-    if (st.stopped || state !== st || !st.sockets.includes(sess)) return;   // goAway で張り替え済みなら何もしない
-    // 接続時間の上限などで切れたら、少し待って張り直す
+    st.sockets = st.sockets.filter(s => s !== sess);
+    if (st.stopped || state !== st || st.active[target] !== sess) return;   // 張り替え済みの古い接続なら何もしない
+    // 予期せず切れたら、少し待って張り直す
+    st.active[target] = null;
     if (++st.retries > 6) { st.onStatus(`自動モードの接続が切れました（${e.code} ${e.reason || ""}）。停止→開始で再接続してください`, true); return; }
     st.onStatus(`再接続中…（${e.code}${e.reason ? " " + e.reason : ""}）`, e.code !== 1000);
-    setTimeout(() => { if (!st.stopped && state === st) connect(st, target); }, 500 * st.retries);
+    setTimeout(() => { if (!st.stopped && state === st && !st.active[target]) connect(st, target); }, 1000 * st.retries);
   };
+}
+
+function closeSession(st, sess) {
+  if (!sess) return;
+  st.sockets = st.sockets.filter(s => s !== sess);
+  try { sess.ws.close(1000); } catch {}
 }
 
 // マイク音声を 16kHz・16bit PCM に変換し、約100msごとに両セッションへ送る
@@ -113,7 +134,7 @@ function onMic(st, f32) {
   }
   const data = toBase64(new Uint8Array(pcm.buffer));
   const msg = JSON.stringify({ realtimeInput: { audio: { data, mimeType: "audio/pcm;rate=16000" } } });
-  for (const s of st.sockets) if (s.ready && s.ws.readyState === 1) s.ws.send(msg);
+  for (const s of Object.values(st.active)) if (s?.ready && s.ws.readyState === 1) s.ws.send(msg);
 }
 
 function toBase64(bytes) {

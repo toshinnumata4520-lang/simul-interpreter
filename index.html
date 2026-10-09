@@ -67,7 +67,18 @@ body.nosrc .para .src{display:none}
 .sheet-head button,.danger{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:8px 16px;font-weight:600}
 .sheet-head button{background:var(--accent);color:#fff;border-color:var(--accent)}
 #settings{display:grid;gap:14px;max-width:640px;margin:0 auto}
-#settings label[hidden]{display:none}
+#settings [hidden]{display:none}
+.easy{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:14px;display:grid;gap:10px}
+.easy h3{margin:0;font-size:16px}
+.easy .note{margin:0;font-size:13px;color:var(--muted);line-height:1.6}
+.easy .big{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px;font-size:16px;font-weight:700}
+.easy .big:disabled{opacity:.4}
+#easyStatus{font-size:14px;line-height:1.6;white-space:pre-line}
+#easyStatus.ok{color:#16a34a;font-weight:700}
+#easyStatus.err{color:var(--rec)}
+.easy details summary{cursor:pointer;font-size:14px;color:var(--accent)}
+.easy ol{margin:8px 0;padding-left:1.4em;font-size:14px;line-height:1.8}
+.easy .sub{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 14px;font-weight:600}
 #settings label{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--muted)}
 #settings label.row{flex-direction:row;align-items:center;gap:8px;font-size:15px;color:var(--text)}
 #settings input[type=text],#settings input[type=password],#settings input[type=number],#settings select,#settings textarea{
@@ -106,6 +117,25 @@ kbd{border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:.9em}
 <div id="sheet" hidden>
   <div class="sheet-head"><h2>設定</h2><button id="closeSettings">完了</button></div>
   <section id="settings">
+    <div class="easy" data-for="gemini">
+      <h3>かんたん設定（Googleでログインするだけ）</h3>
+      <p class="note">あなたのGoogleアカウントに通訳用の無料APIキーを自動で作り、このアプリに設定します（1〜2分）。キーはこの端末の中にだけ保存されます。</p>
+      <p class="note">⚠ 無料キーで送った会話は、Googleのサービス改善（学習）に使われ、人が読むこともあります。</p>
+      <label class="row"><input id="agree" type="checkbox"> 面談・保護者対応・生徒の個人情報の話には使いません</label>
+      <button id="easyBtn" class="big" disabled>Googleでかんたん設定</button>
+      <p class="note">ログイン時に「Googleで確認されていません」と出たら「詳細」→「移動」で進めてください。<a href="privacy.html" target="_blank">プライバシーポリシー</a></p>
+      <div id="easyStatus"></div>
+      <details id="manual">
+        <summary>うまくいかないときは（手動で設定）</summary>
+        <ol>
+          <li><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio のキー作成ページ</a>を開く（Googleでログイン）</li>
+          <li>初めての場合は利用規約に同意する</li>
+          <li>「APIキーを作成」を押し、表示されたキーをコピー</li>
+          <li>この画面に戻り、下の「コピーしたキーを貼り付け」を押す</li>
+        </ol>
+        <button id="pasteBtn" class="sub">コピーしたキーを貼り付け</button>
+      </details>
+    </div>
     <label>翻訳エンジン
       <select id="provider">
         <option value="gemini">Gemini（無料枠・回数制限あり）</option>
@@ -131,6 +161,7 @@ kbd{border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:.9em}
       </select></label>
     <label>文字サイズ
       <input id="fontSize" type="range" min="18" max="96" step="2"></label>
+    <label class="row"><input id="experimental" type="checkbox"> 自動モード（話した言語を自動で判別）を方向ボタンに表示する</label>
     <label class="row"><input id="refine" type="checkbox"> 話の区切りで訳全体を整え直す（推奨・✓が付きます）</label>
     <label class="row"><input id="tts" type="checkbox"> 訳文を読み上げる（ヘッドホン推奨）</label>
     <label>読み上げ速度
@@ -145,7 +176,7 @@ kbd{border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:.9em}
 import Anthropic from "https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.128.0/+esm";
 
 // ---------- 設定 ----------
-const DEFAULTS = { provider:"gemini", geminiKey:"", rpm:10, apiKey:"", model:"haiku", speed:"fast", fontSize:44, showSrc:true, refine:true, tts:false, ttsRate:1.2, glossary:"", dir:"ja-en" };
+const DEFAULTS = { provider:"gemini", geminiKey:"", rpm:10, apiKey:"", model:"haiku", speed:"fast", fontSize:44, showSrc:true, experimental:true, refine:true, tts:false, ttsRate:1.2, glossary:"", dir:"ja-en" };
 const S = { ...DEFAULTS };
 try { Object.assign(S, JSON.parse(localStorage.getItem("simul-settings") || "{}")); } catch {}
 const save = () => { try { localStorage.setItem("simul-settings", JSON.stringify(S)); } catch {} };
@@ -171,7 +202,7 @@ const SPEEDS = {
 
 const $ = id => document.getElementById(id);
 const ui = { provider:$("provider"), geminiKey:$("geminiKey"), rpm:$("rpm"), apiKey:$("apiKey"), model:$("model"), speed:$("speed"), fontSize:$("fontSize"),
-  refine:$("refine"), tts:$("tts"), ttsRate:$("ttsRate"), glossary:$("glossary") };
+  experimental:$("experimental"), refine:$("refine"), tts:$("tts"), ttsRate:$("ttsRate"), glossary:$("glossary") };
 for (const [k, el] of Object.entries(ui)) {
   if (el.type === "checkbox") el.checked = S[k]; else el.value = S[k];
   el.addEventListener("input", () => {
@@ -181,6 +212,7 @@ for (const [k, el] of Object.entries(ui)) {
 }
 function applyUi() {
   document.body.style.setProperty("--fs", S.fontSize + "px");
+  if (S.dir === "auto" && !S.experimental) { S.dir = "ja-en"; save(); }   // 自動モードを表示しない設定の人は通常モードに戻す
   ui.fontSize.value = S.fontSize;
   $("dirBtn").textContent = { "ja-en": "日→英", "en-ja": "英→日", auto: "自動" }[S.dir];
   document.body.classList.toggle("nosrc", !S.showSrc);
@@ -553,6 +585,43 @@ async function startAuto() {
 function stopAuto() { liveMod?.stopLive(); clearTimeout(autoGap); closeAutoPara(); autoBuf = ""; }
 // ===== 自動モードここまで =====
 
+// ---------- かんたん設定（setup.js） ----------
+let setupMod = null;
+import("./setup.js").then(m => {
+  setupMod = m;
+  if (!m.CLIENT_ID) { $("easyBtn").textContent = "かんたん設定（準備中）"; $("manual").open = true; }
+  else if (!S.geminiKey) m.preloadGis();
+}).catch(() => { $("manual").open = true; });
+const easyStatus = (msg, cls = "") => { $("easyStatus").textContent = msg; $("easyStatus").className = cls; };
+$("agree").onchange = () => { $("easyBtn").disabled = !$("agree").checked || !setupMod?.CLIENT_ID; };
+$("easyBtn").onclick = async () => {
+  $("easyBtn").disabled = true;
+  try {
+    const key = await setupMod.autoSetup({ model: GEMINI_MODEL, onStep: m => easyStatus(m) });
+    applyKey(key);
+  } catch (e) {
+    easyStatus((e?.message || String(e)) + (e?.fallback ? "\n下の「手動で設定」の手順で設定してください。" : ""), "err");
+    if (e?.fallback) $("manual").open = true;
+  } finally {
+    $("easyBtn").disabled = !$("agree").checked;
+  }
+};
+$("pasteBtn").onclick = async () => {
+  let text = "";
+  try { text = (await navigator.clipboard.readText()).trim(); } catch {}
+  if (!/^(AIza|AQ\.)[\w.-]{20,}$/.test(text)) {
+    easyStatus("コピーしたキーを読み取れませんでした。下の「Gemini APIキー」欄に長押しで貼り付けてください", "err");
+    ui.geminiKey.focus();
+    return;
+  }
+  applyKey(text);
+};
+function applyKey(key) {
+  S.geminiKey = key; S.provider = "gemini"; save();
+  ui.geminiKey.value = key; ui.provider.value = "gemini"; applyUi();
+  easyStatus("✓ 設定が完了しました。「完了」を押して、下の「開始」から使えます", "ok");
+}
+
 function start() {
   if (S.dir === "auto" && !S.geminiKey) { openSheet(); ui.geminiKey.focus(); setStatus("自動モードには Gemini APIキーが必要です", true); return; }   // 自動モード
   if (S.dir !== "auto" && !activeKey()) { openSheet(); (S.provider === "gemini" ? ui.geminiKey : ui.apiKey).focus(); setStatus("APIキーを入力してください", true); return; }
@@ -569,7 +638,14 @@ let wakeLock = null;
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible" && running)
     navigator.wakeLock?.request("screen").then(l => { wakeLock = l; }).catch(() => {});
+  // 自動モード：画面を離れると iPhone はマイクも通信も止めてしまうので、こちらから正しく閉じておく
+  // （閉じずに放置すると、次に開始したとき古い接続が残っていて断られることがある）
+  if (document.visibilityState === "hidden" && running && S.dir === "auto") {   // 自動モード
+    stop();
+    setStatus("画面を離れたため停止しました。「開始」で再開できます");
+  }
 });
+addEventListener("pagehide", () => { if (running) stop(); });
 function stop() {
   running = false;
   clearTimeout(pauseTimer);
@@ -583,7 +659,7 @@ function stop() {
   setStatus("停止中");
 }
 function swapDir() {
-  const order = liveMod ? ["ja-en", "en-ja", "auto"] : ["ja-en", "en-ja"];   // 自動モード
+  const order = liveMod && S.experimental ? ["ja-en", "en-ja", "auto"] : ["ja-en", "en-ja"];   // 自動モード
   const wasRunning = running;
   if (wasRunning) stop();
   S.dir = order[(order.indexOf(S.dir) + 1) % order.length]; save(); applyUi(); endPara();
