@@ -87,9 +87,31 @@ body.nosrc .para .src{display:none}
 .danger{color:var(--rec);justify-self:start}
 kbd{border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:.9em}
 @media (hover:none){ .kbd-hint{display:none} }
+.inapp{position:relative;z-index:50;background:#fff3cd;color:#3d3000;border-bottom:2px solid #e0b400;padding:12px 16px;font-weight:700;text-align:center;font-size:16px}.inapp button{margin-top:6px}
 </style>
 </head>
 <body style="--fs:36px">
+<script>
+// LINE・Instagram・Facebook などのアプリ内ブラウザでは、Googleのログイン画面から戻れず真っ白になる。
+// LINE は ?openExternalBrowser=1 を付けると Safari / Chrome で開き直すので、自動で切り替える。
+(function () {
+  var ua = navigator.userAgent;
+  if (/\bLine\//i.test(ua) && !/openExternalBrowser=1/.test(location.search)) {
+    location.replace(location.pathname + (location.search ? location.search + "&" : "?") + "openExternalBrowser=1" + location.hash);
+    return;
+  }
+  if (/FBAN|FBAV|Instagram|\bLine\//i.test(ua)) {
+    document.addEventListener("DOMContentLoaded", function () {
+      var d = document.createElement("div");
+      d.className = "inapp";
+      d.innerHTML = "⚠ この画面は アプリの中の ブラウザです。Safari か Chrome で 開いて ください。<br><small>Please open this page in Safari or Chrome.</small>" +
+        '<br><button id="copyurl">URLを コピー / Copy URL</button>';
+      document.body.prepend(d);
+      document.getElementById("copyurl").onclick = function () { navigator.clipboard && navigator.clipboard.writeText(location.origin + location.pathname); this.textContent = "✓"; };
+    });
+  }
+})();
+</script>
 <main id="feed">
   <div id="empty">
     <span data-en="Press &lt;b&gt;Start&lt;/b&gt; below and begin speaking">下の <b>●</b> を押して話し始めてください</span><br>
