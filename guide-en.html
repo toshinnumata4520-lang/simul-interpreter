@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Interpreter App Guide</title>
+<style>
+:root{ --bg:#ffffff; --text:#1b1f24; --muted:#5b6472; --line:#dfe3e8; --accent:#2563eb; --warn:#b45309; --warnbg:#fff7ed; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0b0d10; --text:#eef1f5; --muted:#98a1ae; --line:#2a2f38; --accent:#7aa7ff; --warn:#fbbf24; --warnbg:#2a2113; } }
+@media print{ :root{ --bg:#fff; --text:#000; } .noprint{display:none} }
+body{margin:0 auto;max-width:720px;padding:24px 18px 48px;line-height:1.8;color:var(--text);background:var(--bg);
+  font-family:system-ui,-apple-system,"Hiragino Sans","Segoe UI","Yu Gothic UI","Meiryo",sans-serif}
+h1{font-size:24px;margin:0 0 4px} h2{font-size:18px;margin:28px 0 8px;border-left:4px solid var(--accent);padding-left:10px}
+.lead{color:var(--muted);margin:0 0 20px}
+.qr{display:flex;gap:18px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-radius:12px;padding:16px}
+#qrcode{background:#fff;padding:8px;border-radius:8px;width:176px;height:176px}
+.url{word-break:break-all;font-size:15px}
+ol li{margin:6px 0}
+.warn{background:var(--warnbg);border:1px solid var(--warn);border-radius:10px;padding:12px 14px;margin-top:12px}
+.warn b{color:var(--warn)}
+.foot{margin-top:32px;font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<h1>Simultaneous Interpreter (Japanese ⇄ English)</h1>
+<p class="lead">This app translates speech on the spot and shows it as large subtitles. Use Safari on iPhone, or Chrome on Android and computers (Edge also works on computers). The app's buttons are in Japanese, so each step below shows the Japanese label with its meaning.</p>
+
+<div class="qr">
+  <div id="qrcode" aria-label="QR code for the app"></div>
+  <div>
+    <b>Scan this QR code with your phone's camera</b><br>
+    <span class="url">https://toshinnumata4520-lang.github.io/simul-interpreter/</span>
+  </div>
+</div>
+
+<h2>First-time setup (1–2 minutes, once only)</h2>
+<ol>
+  <li>Open the app from the QR code. The settings screen (設定) appears.</li>
+  <li>Tick the box 「面談・保護者対応・生徒の個人情報の話には使いません」 (<i>"I will not use this for meetings, parent conversations, or students' personal information"</i>).</li>
+  <li>Tap <b>「Googleでかんたん設定」</b> (<i>Easy setup with Google</i>) and choose your Google account.</li>
+  <li>If you see <b>"Google hasn't verified this app"</b>, tap <b>Advanced</b> → <b>Go to 同時通訳 かんたん設定 (unsafe)</b>.<br>This appears because the app was built for internal use at our school.</li>
+  <li>On the permission screen, tap <b>Continue</b> (or <b>Allow</b>).</li>
+  <li>Wait 30–60 seconds until you see 「✓ 設定が完了しました」 (<i>Setup complete</i>). Tap <b>「完了」</b> (<i>Done</i>) to close settings.</li>
+</ol>
+<p>If it doesn't work, open 「うまくいかないときは（手動で設定）」 (<i>If it doesn't work (manual setup)</i>) on the settings screen and follow those steps instead.</p>
+
+<h2>How to use</h2>
+<ol>
+  <li>Tap <b>「開始」</b> (<i>Start</i>) at the bottom of the screen and allow microphone access.</li>
+  <li>Speak, and the translation appears in large text.</li>
+  <li>Use the bottom-left button to choose the direction: <b>日→英</b> (Japanese → English) / <b>英→日</b> (English → Japanese) / <b>自動</b> (<i>Auto</i>: detects which language is spoken).</li>
+  <li><b>A− / A＋</b> changes the text size. <b>原文</b> (<i>Original</i>) shows or hides the original speech.</li>
+  <li>Tap <b>「停止」</b> (<i>Stop</i>) when you finish. Turning off the screen or switching apps also stops it.</li>
+</ol>
+
+<div class="warn">
+  <b>⚠ Important</b><br>
+  This app uses the free tier of your own Google account. Conversations sent on the free tier may be used by Google to improve its services, and may be read by people.<br>
+  <b>Do not use it for meetings, conversations with parents, or anything involving students' names, grades, or family circumstances.</b>
+</div>
+
+<h2>FAQ</h2>
+<p><b>Does it cost anything?</b><br>No. It runs on the free tier of your own Google account (about 40–50 minutes of continuous speech per day).</p>
+<p><b>Do I share the limit with other staff?</b><br>No. Everyone uses their own free allowance.</p>
+<p><b>On Android, it beeps and cuts off every few seconds</b><br>That's how Chrome's speech recognition works on Android. If it bothers you, set the direction button to 「自動」 (<i>Auto</i>).</p>
+<p><b>How do I stop using it?</b><br>Clear your browser's history and site data to remove the settings from your device.</p>
+
+<p class="foot noprint"><a href="./">Open the app</a> ・ <a href="guide.html">日本語版</a> ・ <a href="privacy.html">Privacy policy (Japanese)</a></p>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+try {
+  new QRCode(document.getElementById("qrcode"), { text: "https://toshinnumata4520-lang.github.io/simul-interpreter/", width: 160, height: 160 });
+} catch (e) { document.getElementById("qrcode").textContent = "Could not display the QR code"; }
+</script>
+</body>
+</html>
