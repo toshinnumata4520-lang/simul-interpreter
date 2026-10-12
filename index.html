@@ -73,6 +73,9 @@ body.nosrc .para .src{display:none}
 .easy .note{margin:0;font-size:13px;color:var(--muted);line-height:1.6}
 .easy .big{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px;font-size:16px;font-weight:700}
 .easy .big:disabled{opacity:.4}
+.easy a.big{display:block;text-align:center;text-decoration:none}
+.tos{display:grid;gap:10px;border:1px solid #f59e0b;background:rgba(245,158,11,.08);border-radius:10px;padding:12px}
+.tos ol{margin:0}
 #easyStatus{font-size:14px;line-height:1.6;white-space:pre-line}
 #easyStatus.ok{color:#16a34a;font-weight:700}
 #easyStatus.err{color:var(--rec)}
@@ -152,6 +155,16 @@ kbd{border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:.9em}
       <button id="easyBtn" class="big" disabled data-en="Easy setup with Google">Googleでかんたん設定</button>
       <p class="note" data-en="If you see &quot;Google hasn't verified this app&quot; when signing in, tap &quot;Advanced&quot; → &quot;Go to …&quot; to continue. &lt;a href=&quot;privacy.html&quot; target=&quot;_blank&quot;&gt;Privacy policy&lt;/a&gt;">ログイン時に「Googleで確認されていません」と出たら「詳細」→「移動」で進めてください。<a href="privacy.html" target="_blank">プライバシーポリシー</a></p>
       <div id="easyStatus"></div>
+      <div id="tosHelp" class="tos" hidden>
+        <b data-en="One more step: accept the Google Cloud terms (first time only, about 30 seconds)">あと1手順：Google Cloud の利用規約に同意（初回だけ・30秒ほど）</b>
+        <ol>
+          <li data-en="Tap the blue button below. Google Cloud opens in a new tab.">下の青いボタンを押すと、Google Cloud が新しいタブで開きます。</li>
+          <li data-en="If a welcome screen appears, choose your country, tick the box to agree to the terms, and tap &quot;Agree and continue&quot;. (If no such screen appears, you have already agreed.)">「ようこそ」の画面が出たら、国で「日本」を選び、利用規約のチェックを入れて「同意して続行」を押します。（画面が出なければ同意済みです）</li>
+          <li data-en="Come back to this tab and tap &quot;Try easy setup again&quot;.">このタブに戻って「もう一度かんたん設定」を押します。</li>
+        </ol>
+        <a class="big" href="https://console.cloud.google.com/" target="_blank" rel="noopener" data-en="Open Google Cloud and agree">Google Cloud を開いて同意する</a>
+        <button id="tosRetry" class="sub" data-en="Try easy setup again">もう一度かんたん設定</button>
+      </div>
       <details id="manual">
         <summary data-en="If it doesn't work (manual setup)">うまくいかないときは（手動で設定）</summary>
         <ol>
@@ -631,16 +644,20 @@ const easyStatus = (msg, cls = "") => { $("easyStatus").textContent = msg; $("ea
 $("agree").onchange = () => { $("easyBtn").disabled = !$("agree").checked || !setupMod?.CLIENT_ID; };
 $("easyBtn").onclick = async () => {
   $("easyBtn").disabled = true;
+  $("tosHelp").hidden = true;
   try {
     const key = await setupMod.autoSetup({ model: GEMINI_MODEL, onStep: m => easyStatus(m) });
     applyKey(key);
   } catch (e) {
     easyStatus((e?.message || String(e)) + (e?.fallback ? L("\n下の「手動で設定」の手順で設定してください。", "\nPlease use the manual setup steps below.") : ""), "err");
+    // Google Cloud を初めて使う人：規約に一度同意すれば、そのまま自動で設定できる
+    if (e?.code === "tos") { $("tosHelp").hidden = false; $("tosHelp").scrollIntoView({ block: "nearest", behavior: "smooth" }); }
     if (e?.fallback) $("manual").open = true;
   } finally {
     $("easyBtn").disabled = !$("agree").checked;
   }
 };
+$("tosRetry").onclick = () => $("easyBtn").click();
 $("pasteBtn").onclick = async () => {
   let text = "";
   try { text = (await navigator.clipboard.readText()).trim(); } catch {}

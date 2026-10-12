@@ -12,10 +12,11 @@ const SCOPE = "https://www.googleapis.com/auth/cloud-platform";
 const GEMINI_API = "generativelanguage.googleapis.com";
 const DISPLAY_NAME = "simul-interpreter";
 
-// 失敗したときに「手動の手順」に切り替えるべきかを示す
+// fallback: 失敗したときに「手動の手順」に切り替えるべきか。code: "tos" = Google Cloud の利用規約が未同意
 export class SetupError extends Error {
-  constructor(message, { fallback = true } = {}) { super(message); this.fallback = fallback; }
+  constructor(message, { fallback = true, code = "" } = {}) { super(message); this.fallback = fallback; this.code = code; }
 }
+const tosError = () => new SetupError(L("Google Cloud の利用規約への同意が、まだ済んでいません（初回だけ必要です）", "You haven't accepted the Google Cloud terms of service yet (needed only once)"), { fallback: false, code: "tos" });
 
 let gisLoaded = null;
 function loadGis() {
@@ -83,10 +84,16 @@ async function findOrCreateProject(token, step) {
     op = await api(token, "POST", "https://cloudresourcemanager.googleapis.com/v1/projects", { projectId: id, name: DISPLAY_NAME });
   } catch (e) {
     // Google Cloud を一度も使っていないアカウントは、利用規約への同意が済んでいないため作れない
-    if (/terms of service|tos/i.test(e.message)) throw new SetupError(L("Google Cloud の利用規約への同意が済んでいないため、自動では作れませんでした", "Couldn't create it automatically because the Google Cloud terms of service haven't been accepted"));
+    if (/terms of service/i.test(e.message)) throw tosError();
     throw e;
   }
-  await waitOp(token, "https://cloudresourcemanager.googleapis.com/v1", op, L("プロジェクトの作成", "Project creation"));
+  // Google Cloud を一度も使っていない人は、作成の途中で「利用規約に未同意」として失敗する
+  try {
+    await waitOp(token, "https://cloudresourcemanager.googleapis.com/v1", op, L("プロジェクトの作成", "Project creation"));
+  } catch (e) {
+    if (/terms of service/i.test(e.message)) throw tosError();
+    throw e;
+  }
   return id;
 }
 
